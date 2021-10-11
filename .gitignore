@@ -1,3 +1,9 @@
+#Idea
+/.idea/.gitignore
+/.idea/modules.xml
+/.idea/nft.iml
+/.idea/vcs.xml
+
 node_modules
 .env
 /.env.template
