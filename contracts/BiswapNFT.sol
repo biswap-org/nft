@@ -199,22 +199,26 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         return amount;
     }
 
-    function getToken(uint tokenId) public view returns(
+    function getToken(uint _tokenId) public view returns(
+        uint tokenId,
         address tokenOwner,
         uint level,
         uint rb,
         bool stakeFreeze,
         uint createTimestamp,
-        uint remainToNextLevel
+        uint remainToNextLevel,
+        string memory uri
     ){
-        require(_exists(tokenId), "ERC721: token does not exist");
-        Token memory token = _tokens[tokenId];
-        tokenOwner = ownerOf(tokenId);
+        require(_exists(_tokenId), "ERC721: token does not exist");
+        Token memory token = _tokens[_tokenId];
+        tokenId = _tokenId;
+        tokenOwner = ownerOf(_tokenId);
         level = token.level;
         rb = token.robiBoost;
         stakeFreeze = token.stakeFreeze;
         createTimestamp = token.createTimestamp;
-        remainToNextLevel = _remainRBToMaxLevel(tokenId);
+        remainToNextLevel = _remainRBToMaxLevel(_tokenId);
+        uri = tokenURI(_tokenId);
     }
 
     function approve(address to, uint256 tokenId) public override {
@@ -237,10 +241,10 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     function launchpadMint(address to, uint level, uint robiBoost) public onlyRole(LAUNCHPAD_TOKEN_MINTER) {
         require(to != address(0), "Address can not be zero");
+        require(_rbTable[level] >= robiBoost, "RB Value out of limit");
         _lastTokenId +=1;
         uint tokenId = _lastTokenId;
         _safeMint(to, tokenId);
-
         _tokens[tokenId].robiBoost = robiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = level;
@@ -298,7 +302,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         address from,
         address to,
         uint256 tokenId
-    ) internal override(ERC721EnumerableUpgradeable) {
+    ) internal virtual override(ERC721EnumerableUpgradeable) {
         if(_tokens[tokenId].stakeFreeze == true){
             revert("ERC721: Token frozen");
         }

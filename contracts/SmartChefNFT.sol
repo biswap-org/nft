@@ -3,13 +3,10 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-interface IBiswapNFT is IERC721 {
+
+interface IBiswapNFT {
     function accrueRB(address user, uint amount) external;
     function tokenFreeze(uint tokenId) external;
     function tokenUnfreeze(uint tokenId) external;
@@ -128,11 +125,11 @@ contract SmartChefNFT is Ownable {
     }
 
     // View function to see pending Reward on frontend.
-    function pendingReward(address _user) external view returns (uint[] memory) {
+    function pendingReward(address _user) external view returns (address[] memory, uint[] memory) {
         UserInfo memory user = userInfo[_user];
         uint[] memory rewards = new uint[](listRewardTokens.length);
         if(user.stakedRbAmount == 0){
-            return rewards;
+            return (listRewardTokens, rewards);
         }
         uint _totalRBSupply = totalRBSupply;
         uint _multiplier = getMultiplier(lastRewardBlock, block.number);
@@ -148,7 +145,7 @@ contract SmartChefNFT is Ownable {
             }
             rewards[i] = (user.stakedRbAmount * _accTokenPerShare / 1e12) - rewardDebt[_user][curToken];
         }
-        return rewards;
+        return (listRewardTokens, rewards);
     }
 
     // Update reward variables of the given pool to be up-to-date.
