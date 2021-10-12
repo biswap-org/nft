@@ -215,8 +215,8 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     function getSwapFee(address tokenA, address tokenB) internal view returns (uint swapFee) {
-//        swapFee = uint(10000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
-        swapFee = uint(10000).sub(10); //TODO del in prod!!!
+        swapFee = uint(10000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
+//        swapFee = uint(10000).sub(10); //TODO del in prod!!!
     }
 
     function setPhase(uint _newPhase) public onlyOwner returns (bool){
