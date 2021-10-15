@@ -13,6 +13,9 @@ interface ISwapFeeRewardWithRB {
     function accrueRBFromMarket(address account, address fromToken, uint amount) external;
 }
 
+interface ISmartChefMarket {
+    function updateStakedTokens(address _user, uint amount) external;
+}
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
@@ -21,7 +24,7 @@ import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//BNB, BSW, BUSD
+//BSW, BNB, WBNB, BUSD, USDT
 contract Market is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
@@ -29,19 +32,24 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     enum OfferStatus {Open, Accepted, Cancelled}
 
     uint constant MAX_DEFAULT_FEE = 1000; // max fee 10%
-    uint public defaultFee; //in base 10000
+    uint public defaultFee = 100; //in base 10000 1%
+    uint8 public maxUserTokenOnSellToReward;
+    uint rewardDistributionSeller = 50; //Distribution reward between seller and buyer. Base 100
     address public treasuryAddress;
     address public WBNBAddress;
     ISwapFeeRewardWithRB accruerRB;
+    ISmartChefMarket smartChefMarket;
     bool RBAccrueIsEnabled;
+    bool placementRewardEnabled; //Enable rewards for place NFT tokens on market
+
 
     Offer[] public offers;
     mapping(IERC721 => mapping(uint256 => uint256)) public tokenSellOffers; // nft => tokenId => id
     mapping(address => mapping(IERC721 => mapping(uint256 => uint256))) public userBuyOffers; // user => nft => tokenId => id
     mapping(IERC721 => bool) public nftWhitelist;
     mapping(address => bool) public dealTokensWhitelist;
-    mapping(address => mapping(uint256 => uint256)) public userVolumes; // user => date => volume sum
     mapping(address => uint) public userFee; //User trade fee. if Zero - fee by default
+    mapping(address => uint) public tokensCount; //User`s number of tokens on sale: user => count
 
     struct Offer {
         uint256 tokenId;
@@ -98,7 +106,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         dealTokensWhitelist[_USDT] = true;
         dealTokensWhitelist[_BSW] = true;
         dealTokensWhitelist[_WBNBAddress] = true;
-
     }
 
     function pause() public onlyOwner {
@@ -117,10 +124,22 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         RBAccrueIsEnabled = false;
     }
 
+    function enablePlacementReward() public onlyOwner {
+        placementRewardEnabled = true;
+    }
+
+    function disablePlacementReward() public onlyOwner {
+        placementRewardEnabled = false;
+    }
 
     function setTreasuryAddress(address _treasuryAddress) public onlyOwner {
         treasuryAddress = _treasuryAddress;
         emit NewTreasuryAddress(_treasuryAddress);
+    }
+
+    function setRewardDistributionSeller(uint _rewardDistributionSeller) public onlyOwner {
+        require(_rewardDistributionSeller <= 100, "Incorrect value Must be equal to or greater than 100");
+        rewardDistributionSeller = _rewardDistributionSeller;
     }
 
     function addWhiteListNFT(IERC721[] calldata nfts) public onlyOwner {
@@ -159,6 +178,14 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     function setDefaultFee(uint _newFee) public onlyOwner {
         require(_newFee <= MAX_DEFAULT_FEE, "New fee must be less than or equal to max fee");
         defaultFee = _newFee;
+    }
+
+    function SetMaxUserTokenOnSellToReward(uint8 newCount) public onlyOwner {
+        maxUserTokenOnSellToReward = newCount;
+    }
+
+    function setSmartChefMarket(ISmartChefMarket _smartChefMarket) public onlyOwner {
+        smartChefMarket = _smartChefMarket;
     }
 
     // user functions
@@ -216,9 +243,19 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         }
     }
 
-    function recordVolume(address user, uint256 amount) private {
-        uint256 date = block.timestamp / 86400; //in days
-        userVolumes[user][date] += amount;
+    //increase: true - increase token to accrue rewards; false - decrease token from
+    function placementRewardQualifier(bool increase, address user) internal {
+        if (placementRewardEnabled == false) return;
+
+        if(increase){
+            tokensCount[user]++;
+        } else {
+            tokensCount[user] = tokensCount[user] > 0 ? tokensCount[user] -= 1 : 0;
+        }
+        if(tokensCount[user] > maxUserTokenOnSellToReward) return;
+
+        uint stakedAmount = tokensCount[user] >= maxUserTokenOnSellToReward ? maxUserTokenOnSellToReward : tokensCount[user];
+        smartChefMarket.updateStakedTokens(user, stakedAmount);
     }
 
     function _offerSell(
@@ -227,7 +264,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         uint256 price,
         address dealToken
     ) internal {
-        require(msg.value == 0, 'thank you but seller should not pay');
+        require(msg.value == 0, 'Seller should not pay');
         require(price > 0, 'price > 0');
         offers.push(
             Offer({
@@ -247,8 +284,14 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
         require(getTokenOwner(id) == msg.sender, 'sender should own the token');
         require(isTokenApproved(id, msg.sender), 'token is not approved');
-        _closeSellOfferFor(nft, tokenId);
+
+        if(tokenSellOffers[nft][tokenId] > 0){
+            _closeSellOfferFor(nft, tokenId);
+        } else {
+            placementRewardQualifier(true, msg.sender);
+        }
         tokenSellOffers[nft][tokenId] = id;
+
     }
 
     function _offerBuy(IERC721 nft, uint256 tokenId,uint price, address dealToken) internal {
@@ -289,14 +332,14 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         _offer.acceptUser = msg.sender;
 
         _offer.nft.safeTransferFrom(msg.sender, _offer.user, _offer.tokenId);
-        _distributePayment(msg.sender, _offer);
+        _distributePayment(_offer);
 
         emit AcceptOffer(id, msg.sender, _offer.price);
         _unlinkBuyOffer(_offer);
-        _closeSellOfferFor(_offer.nft, _offer.tokenId);
-
-        recordVolume(_offer.user, _offer.price);
-        recordVolume(msg.sender, _offer.price);
+        if(tokenSellOffers[_offer.nft][_offer.tokenId] > 0){
+            _closeSellOfferFor(_offer.nft, _offer.tokenId);
+            placementRewardQualifier(true, msg.sender);
+        }
     }
 
     function _acceptSell(uint256 id) internal {
@@ -318,11 +361,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         } else {
             _offer.dealToken.safeTransferFrom(msg.sender, address(this), _offer.price);
         }
-        _distributePayment(_offer.user, _offer);
+        _distributePayment(_offer);
         _offer.nft.safeTransferFrom(_offer.user, msg.sender, _offer.tokenId);
-
-        recordVolume(_offer.user, _offer.price);
-        recordVolume(msg.sender, _offer.price);
         emit AcceptOffer(id, msg.sender, _offer.price);
     }
 
@@ -381,15 +421,16 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         }
     }
 
-    function _distributePayment(address seller, Offer memory _offer) internal {
+    function _distributePayment(Offer memory _offer) internal {
+        address seller = _offer.side == Side.Sell? _offer.user : _offer.acceptUser;
+        address buyer = _offer.side == Side.Buy? _offer.user : _offer.acceptUser;
         uint256 feeRate = userFee[seller] == 0 ? defaultFee : userFee[seller];
         uint256 fee = (_offer.price * feeRate) / 10000;
         _transfer(treasuryAddress, fee, _offer.dealToken);
         _transfer(seller, _offer.price - fee, _offer.dealToken);
         if(RBAccrueIsEnabled){
-            uint rbBase = _offer.price / 2;
-            accruerRB.accrueRBFromMarket(_offer.user, address(_offer.dealToken), rbBase);
-            accruerRB.accrueRBFromMarket(_offer.acceptUser, address(_offer.dealToken), rbBase);
+            accruerRB.accrueRBFromMarket(seller, address(_offer.dealToken), fee * rewardDistributionSeller / 100);
+            accruerRB.accrueRBFromMarket(buyer, address(_offer.dealToken), fee * (100 - rewardDistributionSeller) / 100);
         }
     }
 
@@ -420,6 +461,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     }
 
     function _unlinkSellOffer(Offer storage o) internal {
+        placementRewardQualifier(false, o.user);
         tokenSellOffers[o.nft][o.tokenId] = 0;
     }
 

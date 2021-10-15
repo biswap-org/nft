@@ -140,7 +140,8 @@ contract SwapFeeRewardWithRB is Ownable {
     uint public currentPhaseRB = 1;
     uint256 public totalMined = 0;
     uint public totalAccruedRB = 0;
-    uint public robiBoostReward = 10; //for 0.1% (div 10000)
+    uint public rbPercentSwap = 10; //for 0.1% (div 10000)
+    uint public rbPercentMarket = 10000; //for 0.1% (div 10000)
     IBswToken public bswToken;
     IOracle public oracle;
     IBiswapNFT public biswapNFT;
@@ -216,7 +217,7 @@ contract SwapFeeRewardWithRB is Ownable {
 
     function getSwapFee(address tokenA, address tokenB) internal view returns (uint swapFee) {
         swapFee = uint(10000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
-//        swapFee = uint(10000).sub(10); //TODO del in prod!!!
+        //        swapFee = uint(10000).sub(10); //TODO del in prod!!!
     }
 
     function setPhase(uint _newPhase) public onlyOwner returns (bool){
@@ -259,7 +260,7 @@ contract SwapFeeRewardWithRB is Ownable {
             return false;
         }
         _balances[account] = _balances[account].add(quantity);
-        accrueRB(account, output, rbAmount);
+        _accrueRB(account, output, rbAmount, rbPercentSwap);
         emit Rewarded(account, input, output, amount, quantity);
         return true;
     }
@@ -270,12 +271,12 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     function accrueRBFromMarket(address account, address fromToken, uint amount) public onlyMarket {
-        accrueRB(account, fromToken, amount);
+        _accrueRB(account, fromToken, amount, rbPercentMarket);
     }
 
-    function accrueRB(address account, address output, uint amount) private {
+    function _accrueRB(address account, address output, uint amount, uint _rewardPercent) private {
         uint quantity = getQuantity(output, amount, targetRBToken);
-        quantity = quantity.mul(robiBoostReward).div(10000);
+        quantity = quantity.mul(_rewardPercent).div(10000);
         if (quantity > 0) {
             totalAccruedRB += quantity;
             require(totalAccruedRB <= currentPhaseRB.mul(maxAccruedRBInPhase), "SwapFeeReward: Accrued all robi boost in this phase");
@@ -405,8 +406,9 @@ contract SwapFeeRewardWithRB is Ownable {
         pairsList[_pid].enabled = _enabled;
     }
 
-    function setRobiBoostReward(uint percent) public onlyOwner {
-        robiBoostReward = percent;
+    function setRobiBoostReward(uint _percentSwap, uint _percentMarket) public onlyOwner {
+        rbPercentSwap = _percentSwap;
+        rbPercentMarket = _percentMarket;
     }
 
     function setFeeDistribution(uint newDistribution) public {

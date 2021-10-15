@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-//TODO rename contract
+
 contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable {
 
     bytes32 public constant TOKEN_FREEZER = keccak256("TOKEN_FREEZER");
@@ -36,15 +36,6 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     event GainRB(uint indexed tokenId, uint newRB);
     event RBAccrued(address user, uint amount);
     event LevelUp(address indexed user, uint indexed newLevel, uint[] parentsTokensId);
-
-    //TODO delete in prod
-//    constructor(){
-//        initialize("http://", 1000000000000000000, 14);
-//        for(uint i; i <= 10; i++){
-//            mint(msg.sender);
-//        }
-//
-//    }
 
     function initialize(
         string memory baseURI,

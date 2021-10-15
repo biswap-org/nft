@@ -42,7 +42,7 @@ contract SmartChefNFT is Ownable {
 
     event AddNewTokenReward(address token);
     event DisableTokenReward(address token);
-    event ChangeRewardPerBlock(address indexed token, uint rewardPerBlock);
+    event ChangeTokenReward(address indexed token, uint rewardPerBlock);
     event StakeTokens(address indexed user, uint amountRB, uint[] tokensId);
     event UnstakeToken(address indexed user, uint amountRB, uint[] tokensId);
     event EmergencyWithdraw(address indexed user, uint tokenCount);
@@ -94,6 +94,7 @@ contract SmartChefNFT is Ownable {
         } else {
             rewardTokens[_newToken].enabled = false;
         }
+        emit AddNewTokenReward(_newToken);
     }
 
     function disableTokenReward(address _token) public onlyOwner {
@@ -109,6 +110,7 @@ contract SmartChefNFT is Ownable {
             rewardTokens[_token].enabled = true;
             rewardTokens[_token].startBlock = _startBlock;
             rewardTokens[_token].rewardPerBlock = _rewardPerBlock;
+            emit ChangeTokenReward(_token, _rewardPerBlock);
         } else {
             revert("Not enough balance of token");
         }
@@ -173,12 +175,6 @@ contract SmartChefNFT is Ownable {
                     curMultiplier = multiplier;
                 }
                 uint tokenReward = curRewardToken.rewardPerBlock * curMultiplier;
-                uint tokenBalance = IERC20(curToken).balanceOf(address(this));
-                if((tokenBalance - curRewardToken.rewardsForWithdrawal) <= tokenReward){
-                    tokenReward = (tokenBalance - curRewardToken.rewardsForWithdrawal);
-                    rewardTokens[curToken].enabled = false; //money is out - token reward turn to false
-                    emit DisableTokenReward(curToken);
-                }
                 rewardTokens[curToken].rewardsForWithdrawal += tokenReward;
                 rewardTokens[curToken].accTokenPerShare += (tokenReward * 1e12) / _totalRBSupply;
             }
