@@ -37,6 +37,15 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     event RBAccrued(address user, uint amount);
     event LevelUp(address indexed user, uint indexed newLevel, uint[] parentsTokensId);
 
+    //TODO delete in prod
+    //    constructor(){
+    //        initialize("http://", 1000000000000000000, 14);
+    //        for(uint i; i <= 10; i++){
+    //            mint(msg.sender);
+    //        }
+    //
+    //    }
+
     function initialize(
         string memory baseURI,
         uint initialRobiBoost,
@@ -150,15 +159,15 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     //Public functions --------------------------------------------------------------------------------------------
 
-    function supportsInterface(bytes4 interfaceId) //TODO Check!!
-        public
-        view
-        virtual
-        override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
-        returns(bool)
+    function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    virtual
+    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
+    returns(bool)
     {
         return interfaceId == type(IERC721EnumerableUpgradeable).interfaceId ||
-        super.supportsInterface(interfaceId);
+    super.supportsInterface(interfaceId);
     }
 
     function remainRBToNextLevel(uint[] calldata tokenId) public view returns(uint[] memory) {

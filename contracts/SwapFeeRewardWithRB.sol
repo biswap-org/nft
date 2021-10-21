@@ -131,6 +131,7 @@ contract SwapFeeRewardWithRB is Ownable {
     address public factory;
     address public router;
     address public market;
+    address public auction;
     bytes32 public INIT_CODE_HASH;
     uint256 public maxMiningAmount = 100000000 ether;
     uint256 public maxMiningInPhase = 5000 ether;
@@ -142,6 +143,7 @@ contract SwapFeeRewardWithRB is Ownable {
     uint public totalAccruedRB = 0;
     uint public rbPercentSwap = 10; //for 0.1% (div 10000)
     uint public rbPercentMarket = 10000; //for 0.1% (div 10000)
+    uint public rbPercentAuction = 10000; //for 0.1% (div 10000)
     IBswToken public bswToken;
     IOracle public oracle;
     IBiswapNFT public biswapNFT;
@@ -175,6 +177,11 @@ contract SwapFeeRewardWithRB is Ownable {
 
     modifier onlyMarket() {
         require(msg.sender == market, "SwapFeeReward: caller is not the market");
+        _;
+    }
+
+    modifier onlyAuction() {
+        require(msg.sender == auction, "SwapFeeReward: caller is not the market");
         _;
     }
 
@@ -274,6 +281,10 @@ contract SwapFeeRewardWithRB is Ownable {
         _accrueRB(account, fromToken, amount, rbPercentMarket);
     }
 
+    function accrueRBFromAuction(address account, address fromToken, uint amount) public onlyAuction {
+        _accrueRB(account, fromToken, amount, rbPercentAuction);
+    }
+
     function _accrueRB(address account, address output, uint amount, uint _rewardPercent) private {
         uint quantity = getQuantity(output, amount, targetRBToken);
         quantity = quantity.mul(_rewardPercent).div(10000);
@@ -362,6 +373,11 @@ contract SwapFeeRewardWithRB is Ownable {
         market = _market;
     }
 
+    function setAuction(address _auction) public onlyOwner {
+        require(_auction != address(0), "SwapMining: new auction is the zero address");
+        auction = _auction;
+    }
+
     function setBiswapNFT(IBiswapNFT _biswapNFT) public onlyOwner {
         require(address(_biswapNFT) != address(0), "SwapMining: new market is the zero address");
         biswapNFT = _biswapNFT;
@@ -389,10 +405,10 @@ contract SwapFeeRewardWithRB is Ownable {
         require(_pair != address(0), "_pair is the zero address");
         pairsList.push(
             PairsList({
-                pair : _pair,
-                percentReward : _percentReward,
-                enabled : true
-            })
+        pair : _pair,
+        percentReward : _percentReward,
+        enabled : true
+        })
         );
         pairOfPid[_pair] = pairsListLength() - 1;
 
@@ -406,9 +422,10 @@ contract SwapFeeRewardWithRB is Ownable {
         pairsList[_pid].enabled = _enabled;
     }
 
-    function setRobiBoostReward(uint _percentSwap, uint _percentMarket) public onlyOwner {
+    function setRobiBoostReward(uint _percentSwap, uint _percentMarket, uint _percentAuction) public onlyOwner {
         rbPercentSwap = _percentSwap;
         rbPercentMarket = _percentMarket;
+        rbPercentAuction = _percentAuction;
     }
 
     function setFeeDistribution(uint newDistribution) public {
