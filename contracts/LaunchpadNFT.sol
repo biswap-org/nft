@@ -73,7 +73,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         oracle = _oracle;
         wbnb = _wbnb;
         usdt = _usdt;
-        treasuryAddress = msg.sender;
+        treasuryAddress = payable(msg.sender);
         launches.push(
             Launchpad({
                 totalCount: 2500,
