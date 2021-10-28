@@ -510,6 +510,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         emit CancelOffer(id);
     }
 
+
     function _closeUserBuyOffer(uint256 id) internal {
         Offer storage _offer = offers[id];
         if (id > 0 && _offer.status == OfferStatus.Open && _offer.side == Side.Buy) {
