@@ -8,8 +8,6 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/access/AccessControl.sol';
 
 interface IWETH {
     function deposit() external payable;
@@ -99,7 +97,8 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         uint256 rateBase_,
         uint256 bidderIncentiveRate_,
         uint256 bidIncrRate_,
-        address treasuryAddress_
+        address treasuryAddress_,
+        ISwapFeeRewardWithRB feeRewardRB_
     ) {
         weth = weth_;
         extendEndTimestamp = extendEndTimestamp_;
@@ -108,6 +107,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         bidderIncentiveRate = bidderIncentiveRate_;
         bidIncrRate = bidIncrRate_;
         treasuryAddress = treasuryAddress_;
+        feeRewardRB = feeRewardRB_;
 
         auctions.push(
             Inventory({

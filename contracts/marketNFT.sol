@@ -46,14 +46,15 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     address public immutable WBNBAddress;
     ISwapFeeRewardWithRB feeRewardRB;
     ISmartChefMarket smartChefMarket;
-    bool feeRewardRBIsEnabled;
+    bool feeRewardRBIsEnabled; // Enable/disable accrue RB reward for placement NFT tokens from nftForAccrualRB list
     bool placementRewardEnabled; //Enable rewards for place NFT tokens on market
 
 
     Offer[] public offers;
     mapping(IERC721 => mapping(uint256 => uint256)) public tokenSellOffers; // nft => tokenId => id
     mapping(address => mapping(IERC721 => mapping(uint256 => uint256))) public userBuyOffers; // user => nft => tokenId => id
-    mapping(IERC721 => bool) public nftWhitelist;
+    mapping(address => bool) public nftBlacklist; //add tokens on blackList
+    mapping(address => bool) public nftForAccrualRB; //add tokens on which RobiBoost is accrual
     mapping(address => bool) public dealTokensWhitelist;
     mapping(address => uint) public userFee; //User trade fee. if Zero - fee by default
     mapping(address => uint) public tokensCount; //User`s number of tokens on sale: user => count
@@ -83,7 +84,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     event CancelOffer(uint256 indexed id);
     event AcceptOffer(uint256 indexed id, address indexed user, uint256 price);
     event NewTreasuryAddress(address _treasuryAddress);
-    event NFTWhiteListUpdate(IERC721 nft, bool whiteListed);
+    event NFTBlackListUpdate(address nft, bool state);
+    event NFTAccrualListUpdate(address nft, bool state);
     event DealTokensWhiteListUpdate(address token, bool whiteListed);
     event NewUserFee(address user, uint fee);
     event SetRoyalty(address nftAddress, address royaltyReceiver, uint32 rate, bool enable);
@@ -95,6 +97,11 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         address _BSW,
         ISwapFeeRewardWithRB _feeRewardRB
     ) {
+        //NFT-01
+        require(_treasuryAddress != address(0), "Address cant be zero");
+        require(_WBNBAddress != address(0), "Address cant be zero");
+        require(_USDT != address(0), "Address cant be zero");
+        require(_BSW != address(0), "Address cant be zero");
         treasuryAddress = _treasuryAddress;
         WBNBAddress = _WBNBAddress;
         feeRewardRB = _feeRewardRB;
@@ -144,6 +151,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     }
 
     function setTreasuryAddress(address _treasuryAddress) public onlyOwner {
+        //NFT-01
+        require(_treasuryAddress != address(0), "Address cant be zero");
         treasuryAddress = _treasuryAddress;
         emit NewTreasuryAddress(_treasuryAddress);
     }
@@ -163,17 +172,17 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         emit SetRoyalty(nftAddress, royaltyReceiver, rate, enable);
     }
 
-    function addWhiteListNFT(IERC721[] calldata nfts) public onlyOwner {
+    function addBlackListNFT(address[] calldata nfts) public onlyOwner {
         for (uint256 i = 0; i < nfts.length; i++) {
-            nftWhitelist[nfts[i]] = true;
-            emit NFTWhiteListUpdate(nfts[i], true);
+            nftBlacklist[nfts[i]] = true;
+            emit NFTBlackListUpdate(nfts[i], true);
         }
     }
 
-    function delWhiteListNFT(IERC721[] calldata nfts) public onlyOwner {
+    function delBlackListNFT(address[] calldata nfts) public onlyOwner {
         for (uint256 i = 0; i < nfts.length; i++) {
-            delete nftWhitelist[nfts[i]];
-            emit NFTWhiteListUpdate(nfts[i], false);
+            delete nftBlacklist[nfts[i]];
+            emit NFTBlackListUpdate(nfts[i], false);
         }
     }
 
@@ -189,6 +198,18 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
             delete dealTokensWhitelist[_tokens[i]];
             emit DealTokensWhiteListUpdate(_tokens[i], false);
         }
+    }
+
+    function addNftForAccrualRB(address _nft) public onlyOwner {
+        require(_nft != address(0), "Address cant be zero");
+        nftForAccrualRB[_nft] = true;
+        emit NFTAccrualListUpdate(_nft, true);
+    }
+
+    function delNftForAccrualRB(address _nft) public onlyOwner {
+        require(_nft != address(0), "Address cant be zero");
+        delete nftForAccrualRB[_nft];
+        emit NFTAccrualListUpdate(_nft, false);
     }
 
     function setUserFee(address user, uint fee) public onlyOwner {
@@ -212,8 +233,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     function setFeeRewardRB(ISwapFeeRewardWithRB _feeRewardRB) public onlyOwner {
         feeRewardRB = _feeRewardRB;
     }
-
-
 
     // user functions
 
@@ -239,7 +258,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     nonReentrant
     _offerExists(id)
     _offerOpen(id)
-    _notWhiteListed(id)
+    _notBlackListed(id)
     whenNotPaused
     notContract
     {
@@ -272,8 +291,9 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     }
 
     //increase: true - increase token to accrue rewards; false - decrease token from
-    function placementRewardQualifier(bool increase, address user) internal {
-        if (placementRewardEnabled == false) return;
+    function placementRewardQualifier(bool increase, address user, address nftToken) internal {
+        //Check if nft token in nftForAccrualRB list and accrue reward enable
+        if(!nftForAccrualRB[nftToken] || !placementRewardEnabled) return;
 
         if(increase){
             tokensCount[user]++;
@@ -316,7 +336,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         if(tokenSellOffers[nft][tokenId] > 0){
             _closeSellOfferFor(nft, tokenId);
         } else {
-            placementRewardQualifier(true, msg.sender);
+            placementRewardQualifier(true, msg.sender, address(nft));
         }
         tokenSellOffers[nft][tokenId] = id;
 
@@ -366,7 +386,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         _unlinkBuyOffer(_offer);
         if(tokenSellOffers[_offer.nft][_offer.tokenId] > 0){
             _closeSellOfferFor(_offer.nft, _offer.tokenId);
-            placementRewardQualifier(true, msg.sender);
+            //NFT-03
+            placementRewardQualifier(false, msg.sender, address(_offer.nft));
         }
     }
 
@@ -431,14 +452,14 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         _;
     }
 
-    modifier _notWhiteListed(uint256 id) {
+    modifier _notBlackListed(uint256 id) {
         Offer storage _offer = offers[id];
-        require(nftWhitelist[_offer.nft], 'NFT not in white list');
+        require(!nftBlacklist[address(_offer.nft)], 'NFT in black list');
         _;
     }
 
     modifier _nftAllowed(IERC721 nft) {
-        require(nftWhitelist[nft], 'NFT not in white list');
+        require(!nftBlacklist[address(nft)], 'NFT in black list');
         _;
     }
 
@@ -450,7 +471,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
     // internal functions
     function _transfer(address to, uint256 amount, IERC20 _dealToken) internal {
-        if (amount > 0) {
+        if (amount > 0 && to != address(0)) {
             if (address(_dealToken) == WBNBAddress) {
                 IWETH(WBNBAddress).withdraw(amount);
                 payable(to).transfer(amount);
@@ -504,7 +525,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     }
 
     function _unlinkSellOffer(Offer storage o) internal {
-        placementRewardQualifier(false, o.user);
+        placementRewardQualifier(false, o.user, address(o.nft));
         tokenSellOffers[o.nft][o.tokenId] = 0;
     }
 
