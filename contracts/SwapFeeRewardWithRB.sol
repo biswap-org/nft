@@ -123,7 +123,26 @@ interface IBiswapNFT {
     function getInfoForStaking(uint tokenId) external view returns(address tokenOwner, bool stakeFreeze, uint robiBoost);
 }
 
-contract SwapFeeRewardWithRB is Ownable {
+abstract contract ReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor() public {
+        _status = _NOT_ENTERED;
+    }
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+
+contract SwapFeeRewardWithRB is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private _whitelist;
@@ -141,9 +160,9 @@ contract SwapFeeRewardWithRB is Ownable {
     uint public currentPhaseRB = 1;
     uint256 public totalMined = 0;
     uint public totalAccruedRB = 0;
-    uint public rbPercentSwap = 10; //for 0.1% (div 10000)
-    uint public rbPercentMarket = 10000; //for 0.1% (div 10000)
-    uint public rbPercentAuction = 10000; //for 0.1% (div 10000)
+    uint public rbWagerOnSwap = 1500; //Wager of RB
+    uint public rbPercentMarket = 10000; // (div 10000)
+    uint public rbPercentAuction = 10000; // (div 10000)
     IBswToken public bswToken;
     IOracle public oracle;
     IBiswapNFT public biswapNFT;
@@ -169,6 +188,15 @@ contract SwapFeeRewardWithRB is Ownable {
 
     event Withdraw(address userAddress, uint256 amount);
     event Rewarded(address account, address input, address output, uint256 amount, uint256 quantity);
+    //BNF-01, SFR-01
+    event NewRouter(address);
+    event NewFactory(address);
+    event NewMarket(address);
+    event NewPhase(uint);
+    event NewPhaseRB(uint);
+    event NewAuction(address);
+    event NewBiswapNFT(IBiswapNFT);
+    event NewOracle(IOracle);
 
     modifier onlyRouter() {
         require(msg.sender == router, "SwapFeeReward: caller is not the router");
@@ -181,7 +209,7 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     modifier onlyAuction() {
-        require(msg.sender == auction, "SwapFeeReward: caller is not the market");
+        require(msg.sender == auction, "SwapFeeReward: caller is not the auction");
         _;
     }
 
@@ -196,6 +224,14 @@ contract SwapFeeRewardWithRB is Ownable {
         address _targetRBToken
 
     ) public {
+        //SFR-03
+        require(
+            _factory != address(0)
+            && _router != address(0)
+            && _targetToken != address(0)
+            && _targetRBToken != address(0),
+            "Address can not be zero"
+        );
         factory = _factory;
         router = _router;
         INIT_CODE_HASH = _INIT_CODE_HASH;
@@ -223,17 +259,22 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     function getSwapFee(address tokenA, address tokenB) internal view returns (uint swapFee) {
-        swapFee = uint(10000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
+        //SFR-05
+        swapFee = uint(1000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
         //        swapFee = uint(10000).sub(10); //TODO del in prod!!!
     }
 
     function setPhase(uint _newPhase) public onlyOwner returns (bool){
         currentPhase = _newPhase;
+        //BNF-01, SFR-01
+        emit NewPhase(_newPhase);
         return true;
     }
 
     function setPhaseRB(uint _newPhase) public onlyOwner returns (bool){
         currentPhaseRB = _newPhase;
+        //BNF-01, SFR-01
+        emit NewPhaseRB(_newPhase);
         return true;
     }
 
@@ -246,29 +287,57 @@ contract SwapFeeRewardWithRB is Ownable {
         return true;
     }
 
+    function feeCalculate(address account, address input, address output, uint256 amount)
+    public
+    view
+    returns(
+        uint feeReturnInBSW,
+        uint feeReturnInUSD,
+        uint robiBoostAccrue
+    )
+    {
+
+        uint256 pairFee = getSwapFee(input, output);
+        address pair = pairFor(input, output);
+        PairsList memory pool = pairsList[pairOfPid[pair]];
+        if (pool.pair != pair || pool.enabled == false || !isWhitelist(input) || !isWhitelist(output)) {
+            feeReturnInBSW = 0;
+            feeReturnInUSD = 0;
+            robiBoostAccrue = 0;
+        } else {
+            (uint feeAmount, uint rbAmount) = calcAmounts(amount, account);
+            uint256 fee = feeAmount.div(pairFee);
+            uint256 quantity = getQuantity(output, fee, targetToken);
+            feeReturnInBSW = quantity.mul(pool.percentReward).div(100);
+            robiBoostAccrue = getQuantity(output, rbAmount.div(rbWagerOnSwap), targetRBToken);
+            feeReturnInUSD = getQuantity(targetToken, feeReturnInBSW, targetRBToken);
+        }
+    }
+
     function swap(address account, address input, address output, uint256 amount) public onlyRouter returns (bool) {
         if (!isWhitelist(input) || !isWhitelist(output)) {
             return false;
         }
-        if (maxMiningAmount <= totalMined) {
-            return false;
-        }
         address pair = pairFor(input, output);
-        PairsList storage pool = pairsList[pairOfPid[pair]];
+        PairsList memory pool = pairsList[pairOfPid[pair]];
         if (pool.pair != pair || pool.enabled == false) {
             return false;
         }
         uint256 pairFee = getSwapFee(input, output);
         (uint feeAmount, uint rbAmount) = calcAmounts(amount, account);
         uint256 fee = feeAmount.div(pairFee);
+        rbAmount = rbAmount.div(rbWagerOnSwap);
+        //SFR-05
+        _accrueRB(account, output, rbAmount);
+
         uint256 quantity = getQuantity(output, fee, targetToken);
         quantity = quantity.mul(pool.percentReward).div(100);
-        if (totalMined.add(quantity) > currentPhase.mul(maxMiningInPhase)) {
-            return false;
+        if (maxMiningAmount >= totalMined.add(quantity)) {
+            if (totalMined.add(quantity) <= currentPhase.mul(maxMiningInPhase)) {
+                _balances[account] = _balances[account].add(quantity);
+                emit Rewarded(account, input, output, amount, quantity);
+            }
         }
-        _balances[account] = _balances[account].add(quantity);
-        _accrueRB(account, output, rbAmount, rbPercentSwap);
-        emit Rewarded(account, input, output, amount, quantity);
         return true;
     }
 
@@ -278,18 +347,23 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     function accrueRBFromMarket(address account, address fromToken, uint amount) public onlyMarket {
-        _accrueRB(account, fromToken, amount, rbPercentMarket);
+        //SFR-05
+        amount = amount.mul(rbPercentMarket).div(10000);
+        _accrueRB(account, fromToken, amount);
     }
 
     function accrueRBFromAuction(address account, address fromToken, uint amount) public onlyAuction {
-        _accrueRB(account, fromToken, amount, rbPercentAuction);
+        //SFR-05
+        amount = amount.mul(rbPercentAuction).div(10000);
+        _accrueRB(account, fromToken, amount);
     }
 
-    function _accrueRB(address account, address output, uint amount, uint _rewardPercent) private {
+    //SFR-05
+    function _accrueRB(address account, address output, uint amount) private {
         uint quantity = getQuantity(output, amount, targetRBToken);
-        quantity = quantity.mul(_rewardPercent).div(10000);
         if (quantity > 0) {
-            totalAccruedRB += quantity;
+            //SFR-06
+            totalAccruedRB = totalAccruedRB.add(quantity);
             require(totalAccruedRB <= currentPhaseRB.mul(maxAccruedRBInPhase), "SwapFeeReward: Accrued all robi boost in this phase");
             biswapNFT.accrueRB(account, quantity);
         }
@@ -305,17 +379,20 @@ contract SwapFeeRewardWithRB is Ownable {
         require(recoveredAddress != address(0) && recoveredAddress == spender, "SwapFeeReward: INVALID_SIGNATURE");
     }
 
-    function withdraw(uint8 v, bytes32 r, bytes32 s) public returns (bool){
+    //BNF-02, SCN-01, SFR-02
+    function withdraw(uint8 v, bytes32 r, bytes32 s) public nonReentrant returns (bool){
         require(maxMiningAmount > totalMined, "SwapFeeReward: Mined all tokens");
         uint256 balance = _balances[msg.sender];
         require(totalMined.add(balance) <= currentPhase.mul(maxMiningInPhase), "SwapFeeReward: Mined all tokens in this phase");
         permit(msg.sender, balance, v, r, s);
         if (balance > 0) {
-            bswToken.mint(msg.sender, balance);
             _balances[msg.sender] = _balances[msg.sender].sub(balance);
-            emit Withdraw(msg.sender, balance);
             totalMined = totalMined.add(balance);
-            return true;
+            //SFR-04
+            if(bswToken.mint(msg.sender, balance)){
+                emit Withdraw(msg.sender, balance);
+                return true;
+            }
         }
         return false;
     }
@@ -359,38 +436,51 @@ contract SwapFeeRewardWithRB is Ownable {
     }
 
     function getWhitelist(uint256 _index) public view returns (address){
-        require(_index <= getWhitelistLength() - 1, "SwapMining: index out of bounds");
+        //SFR-06
+        require(_index <= getWhitelistLength().sub(1), "SwapMining: index out of bounds");
         return EnumerableSet.at(_whitelist, _index);
     }
 
     function setRouter(address newRouter) public onlyOwner {
         require(newRouter != address(0), "SwapMining: new router is the zero address");
         router = newRouter;
+        //BNF-01, SFR-01
+        emit NewRouter(newRouter);
     }
 
     function setMarket(address _market) public onlyOwner {
         require(_market != address(0), "SwapMining: new market is the zero address");
         market = _market;
+        //BNF-01, SFR-01
+        emit NewMarket(_market);
     }
 
     function setAuction(address _auction) public onlyOwner {
         require(_auction != address(0), "SwapMining: new auction is the zero address");
         auction = _auction;
+        //BNF-01, SFR-01
+        emit NewAuction(_auction);
     }
 
     function setBiswapNFT(IBiswapNFT _biswapNFT) public onlyOwner {
-        require(address(_biswapNFT) != address(0), "SwapMining: new market is the zero address");
+        require(address(_biswapNFT) != address(0), "SwapMining: new biswapNFT is the zero address");
         biswapNFT = _biswapNFT;
+        //BNF-01, SFR-01
+        emit NewBiswapNFT(_biswapNFT);
     }
 
     function setOracle(IOracle _oracle) public onlyOwner {
         require(address(_oracle) != address(0), "SwapMining: new oracle is the zero address");
         oracle = _oracle;
+        //BNF-01, SFR-01
+        emit NewOracle(_oracle);
     }
 
     function setFactory(address _factory) public onlyOwner {
         require(_factory != address(0), "SwapMining: new factory is the zero address");
         factory = _factory;
+        //BNF-01, SFR-01
+        emit NewFactory(_factory);
     }
 
     function setInitCodeHash(bytes32 _INIT_CODE_HASH) public onlyOwner {
@@ -410,7 +500,8 @@ contract SwapFeeRewardWithRB is Ownable {
         enabled : true
         })
         );
-        pairOfPid[_pair] = pairsListLength() - 1;
+        //SFR-06
+        pairOfPid[_pair] = pairsListLength().sub(1);
 
     }
 
@@ -422,8 +513,8 @@ contract SwapFeeRewardWithRB is Ownable {
         pairsList[_pid].enabled = _enabled;
     }
 
-    function setRobiBoostReward(uint _percentSwap, uint _percentMarket, uint _percentAuction) public onlyOwner {
-        rbPercentSwap = _percentSwap;
+    function setRobiBoostReward(uint _rbWagerOnSwap, uint _percentMarket, uint _percentAuction) public onlyOwner {
+        rbWagerOnSwap = _rbWagerOnSwap;
         rbPercentMarket = _percentMarket;
         rbPercentAuction = _percentAuction;
     }

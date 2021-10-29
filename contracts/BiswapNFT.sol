@@ -36,6 +36,8 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     event GainRB(uint indexed tokenId, uint newRB);
     event RBAccrued(address user, uint amount);
     event LevelUp(address indexed user, uint indexed newLevel, uint[] parentsTokensId);
+    //BNF-01, SFR-01
+    event Initialize(string baseURI, uint initialRobiBoost, uint burnRBPeriod);
 
     //TODO delete in prod
     //    constructor(){
@@ -101,6 +103,8 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
             increaseRobiBoost(msg.sender, (block.timestamp - 16 days)/86400, 10000e18);
 
         }
+        //BNF-01, SFR-01
+        emit Initialize(baseURI, initialRobiBoost, burnRBPeriod);
     }
 
     //External functions --------------------------------------------------------------------------------------------
@@ -138,6 +142,11 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     function setBaseURI(string calldata newBaseUri) external onlyRole(DEFAULT_ADMIN_ROLE){
         _internalBaseURI = newBaseUri;
+    }
+
+    function setBurnRBPeriod(uint newPeriod) external onlyRole(DEFAULT_ADMIN_ROLE){
+        require(newPeriod > 0, "Wrong period");
+        _burnRBPeriod = newPeriod;
     }
 
     function tokenFreeze(uint tokenId) external onlyRole(TOKEN_FREEZER) {
@@ -228,18 +237,19 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         super.approve(to, tokenId);
     }
 
-    function mint(address to) public onlyRole(TOKEN_MINTER_ROLE) {
+    //BNF-02, SCN-01, SFR-02
+    function mint(address to) public onlyRole(TOKEN_MINTER_ROLE) nonReentrant {
         require(to != address(0), "Address can not be zero");
         _lastTokenId +=1;
         uint tokenId = _lastTokenId;
         _safeMint(to, tokenId);
-
         _tokens[tokenId].robiBoost = _initialRobiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = 1; //start from 1 level
     }
 
-    function launchpadMint(address to, uint level, uint robiBoost) public onlyRole(LAUNCHPAD_TOKEN_MINTER) {
+    //BNF-02, SCN-01, SFR-02
+    function launchpadMint(address to, uint level, uint robiBoost) public onlyRole(LAUNCHPAD_TOKEN_MINTER) nonReentrant {
         require(to != address(0), "Address can not be zero");
         require(_rbTable[level] >= robiBoost, "RB Value out of limit");
         _lastTokenId +=1;

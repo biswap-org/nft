@@ -4,7 +4,8 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
+//BNF-02
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 interface IBiswapNFT {
     function accrueRB(address user, uint amount) external;
@@ -14,7 +15,7 @@ interface IBiswapNFT {
     function getInfoForStaking(uint tokenId) external view returns(address tokenOwner, bool stakeFreeze, uint robiBoost);
 }
 
-contract SmartChefNFT is Ownable {
+contract SmartChefNFT is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint public totalRBSupply;
@@ -191,7 +192,8 @@ contract SmartChefNFT is Ownable {
         }
     }
 
-    function _withdrawReward() internal {
+    //SCN-01, SFR-02
+    function _withdrawReward() internal nonReentrant {
         updatePool();
         UserInfo memory user = userInfo[msg.sender];
         address[] memory _listRewardTokens = listRewardTokens;
@@ -216,7 +218,8 @@ contract SmartChefNFT is Ownable {
     }
 
     // Stake _NFT tokens to SmartChefNFT
-    function stake(uint[] calldata tokensId) public {
+    //BNF-02, SFR-02
+    function stake(uint[] calldata tokensId) public nonReentrant {
         _withdrawReward();
         uint depositedRobiBoost = 0;
         for(uint i = 0; i < tokensId.length; i++){
@@ -236,7 +239,8 @@ contract SmartChefNFT is Ownable {
     }
 
     // Withdraw _NFT tokens from STAKING.
-    function unstake(uint[] calldata tokensId) public {
+    //BNF-02, SFR-02
+    function unstake(uint[] calldata tokensId) public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         require(user.stakedTokensId.length >= tokensId.length, "Wrong token count given");
         uint withdrawalRBAmount = 0;

@@ -76,53 +76,53 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = payable(msg.sender);
         launches.push(
             Launchpad({
-                totalCount: 2500,
-                soldCount: 0,
-                priceInUSD: 10 ether /1000,
-                level: 1,
-                robiBoost: 1,
-                maxToUser: 6
-            })
+        totalCount: 2500,
+        soldCount: 0,
+        priceInUSD: 10 ether,
+        level: 1,
+        robiBoost: 1e18,
+        maxToUser: 6
+        })
         );
         launches.push(
             Launchpad({
-                totalCount: 250,
-                soldCount: 0,
-                priceInUSD: 200 ether /10000,
-                level: 2,
-                robiBoost: 66,
-                maxToUser: 1
-            })
+        totalCount: 250,
+        soldCount: 0,
+        priceInUSD: 200 ether,
+        level: 2,
+        robiBoost: 66e18,
+        maxToUser: 1
+        })
         );
         launches.push(
             Launchpad({
-                totalCount: 50,
-                soldCount: 0,
-                priceInUSD: 1000 ether /10000,
-                level: 3,
-                robiBoost: 550,
-                maxToUser: 1
-            })
+        totalCount: 50,
+        soldCount: 0,
+        priceInUSD: 1000 ether,
+        level: 3,
+        robiBoost: 550e18,
+        maxToUser: 1
+        })
         );
         launches.push(
             Launchpad({
-                totalCount: 10,
-                soldCount: 0,
-                priceInUSD: 6000 ether /10000,
-                level: 4,
-                robiBoost: 4400,
-                maxToUser: 1
-            })
+        totalCount: 10,
+        soldCount: 0,
+        priceInUSD: 6000 ether,
+        level: 4,
+        robiBoost: 4400e18,
+        maxToUser: 1
+        })
         );
         launches.push(
             Launchpad({
-                totalCount: 1,
-                soldCount: 0,
-                priceInUSD: 40000 ether /10000,
-                level: 5,
-                robiBoost: 33000,
-                maxToUser: 1
-            })
+        totalCount: 1,
+        soldCount: 0,
+        priceInUSD: 40000 ether,
+        level: 5,
+        robiBoost: 33000e18,
+        maxToUser: 1
+        })
         );
     }
 
@@ -172,13 +172,13 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         require(_level < 7, "Incorrect level");
         launches.push(
             Launchpad({
-                totalCount: _totalCount,
-                soldCount: 0,
-                priceInUSD: _priceInUSD,
-                level: _level,
-                robiBoost: _robiBoost,
-                maxToUser: _maxToUser
-            })
+        totalCount: _totalCount,
+        soldCount: 0,
+        priceInUSD: _priceInUSD,
+        level: _level,
+        robiBoost: _robiBoost,
+        maxToUser: _maxToUser
+        })
         );
     }
 
@@ -210,11 +210,11 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _dealToken: Purchase ERC20 token
      */
     function buyNFT(uint _launchIndex, address _dealToken)
-        public
-        payable
-        nonReentrant
-        whenNotPaused
-        _dealTokenInWhitelist(_dealToken)
+    public
+    payable
+    nonReentrant
+    whenNotPaused
+    _dealTokenInWhitelist(_dealToken)
     {
         require(_launchIndex < launches.length, "Wrong launchpad number");
 
@@ -223,8 +223,8 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         boughtCount[msg.sender][_launchIndex] += 1;
         _launch.soldCount += 1;
         uint price = _dealToken == usdt ?
-                    _launch.priceInUSD :
-                    oracle.consult(usdt, _launch.priceInUSD, _dealToken);
+        _launch.priceInUSD :
+        oracle.consult(usdt, _launch.priceInUSD, _dealToken);
 
         require(price > 0, "Wrong price given");
 
@@ -260,7 +260,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
     function checkLimits(address user, uint launchIndex) internal view returns(bool){
         Launchpad memory launch = launches[launchIndex];
         return boughtCount[user][launchIndex] < launch.maxToUser &&
-            launch.soldCount < launch.totalCount;
+        launch.soldCount < launch.totalCount;
     }
 
     modifier _dealTokenInWhitelist(address _dealToken) {

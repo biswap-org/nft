@@ -33,7 +33,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     }
 
     struct Inventory {
-        uint256 nftCount;
+        TokenPair pair;
         address seller;
         address bidder;
         IERC20 currency;
@@ -45,14 +45,14 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         State status;
     }
 
-    event NFTWhitelisted(IERC721 nft, bool whitelisted);
+    event NFTBlacklisted(IERC721 nft, bool whitelisted);
     event NewAuction(
         uint256 indexed id,
         address indexed seller,
         IERC20 currency,
         uint256 askPrice,
         uint256 endTimestamp,
-        TokenPair[] bundle
+        TokenPair pair
     );
     event NewBid(
         uint256 indexed id,
@@ -63,15 +63,15 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     );
     event AuctionCancelled(uint256 indexed id);
     event AuctionFinished(uint256 indexed id, address indexed winner);
-
-
+    event NFTAccrualListUpdate(address nft, bool state);
 
     bool internal _canReceive = false;
     IWETH public immutable weth;
     Inventory[] public auctions;
-    mapping(uint256 => mapping(uint256 => TokenPair)) public auctionNfts;
+    //    mapping(uint256 => mapping(uint256 => TokenPair)) public auctionNfts; delete
 
-    mapping(IERC721 => bool) public nftWhitelist;
+    mapping(IERC721 => bool) public nftBlacklist;
+    mapping(address => bool) public nftForAccrualRB; //add tokens on which RobiBoost is accrual
     mapping(IERC20 => bool) public dealTokenWhitelist;
     mapping(IERC721 => mapping(uint256 => uint256)) public auctionNftIndex; // nft -> tokenId -> id
     mapping(address => uint) public userFee; //User auction fee. if Zero - default fee
@@ -111,7 +111,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
         auctions.push(
             Inventory({
-        nftCount: 0,
+        pair: TokenPair(IERC721(address(0)), 0),
         seller: address(0),
         bidder: address(0),
         currency: IERC20(address(0)),
@@ -159,14 +159,26 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         delete dealTokenWhitelist[cur];
     }
 
-    function whitelistNFT(IERC721 nft) public onlyOwner {
-        nftWhitelist[nft] = true;
-        emit NFTWhitelisted(nft, true);
+    function blacklistNFT(IERC721 nft) public onlyOwner {
+        nftBlacklist[nft] = true;
+        emit NFTBlacklisted(nft, true);
     }
 
-    function unwhitelistNFT(IERC721 nft) public onlyOwner {
-        delete nftWhitelist[nft];
-        emit NFTWhitelisted(nft, false);
+    function unblacklistNFT(IERC721 nft) public onlyOwner {
+        delete nftBlacklist[nft];
+        emit NFTBlacklisted(nft, false);
+    }
+
+    function addNftForAccrualRB(address _nft) public onlyOwner {
+        require(_nft != address(0), "Address cant be zero");
+        nftForAccrualRB[_nft] = true;
+        emit NFTAccrualListUpdate(_nft, true);
+    }
+
+    function delNftForAccrualRB(address _nft) public onlyOwner {
+        require(_nft != address(0), "Address cant be zero");
+        delete nftForAccrualRB[_nft];
+        emit NFTAccrualListUpdate(_nft, false);
     }
 
     function setUserFee(address user, uint fee) public onlyOwner {
@@ -198,15 +210,16 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     ) external override whenNotPaused returns (bytes4) {
         if (data.length > 0) {
             require(operator == from, 'caller should own the token');
-            require(nftWhitelist[IERC721(msg.sender)], 'token not allowed');
+            require(!nftBlacklist[IERC721(msg.sender)], 'token not allowed');
             (IERC20 currency, uint256 askPrice, uint256 endTimestamp) = abi.decode(
                 data,
                 (IERC20, uint256, uint256)
             );
-            TokenPair[] memory bundle = new TokenPair[](1);
-            bundle[0].nft = IERC721(msg.sender);
-            bundle[0].tokenId = tokenId;
-            _sell(from, bundle, currency, askPrice, endTimestamp);
+            TokenPair memory pair = TokenPair({
+            nft: IERC721(msg.sender),
+            tokenId: tokenId
+            });
+            _sell(from, pair, currency, askPrice, endTimestamp);
         } else {
             require(_canReceive, 'cannot transfer directly');
         }
@@ -215,26 +228,23 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     }
 
     function sell(
-        TokenPair[] calldata bundle,
+        TokenPair calldata pair,
         IERC20 currency,
         uint256 askPrice,
         uint256 endTimestamp
     ) public nonReentrant whenNotPaused _waitForTransfer notContract {
-        require(bundle.length > 0, 'empty tokens');
+        require(address(pair.nft) != address(0), 'Address cant be zero');
 
-        for (uint256 i = 0; i < bundle.length; i++) {
-            TokenPair calldata p = bundle[i];
-            require(nftWhitelist[p.nft], 'token not allowed');
-            require(_isTokenOwnerAndApproved(p.nft, p.tokenId), 'token not approved');
-            p.nft.safeTransferFrom(msg.sender, address(this), p.tokenId);
-        }
+        require(!nftBlacklist[pair.nft], 'token not allowed');
+        require(_isTokenOwnerAndApproved(pair.nft, pair.tokenId), 'token not approved');
+        pair.nft.safeTransferFrom(msg.sender, address(this), pair.tokenId);
 
-        _sell(msg.sender, bundle, currency, askPrice, endTimestamp);
+        _sell(msg.sender, pair, currency, askPrice, endTimestamp);
     }
 
     function _sell(
         address seller,
-        TokenPair[] memory bundle,
+        TokenPair memory pair,
         IERC20 currency,
         uint256 askPrice,
         uint256 endTimestamp
@@ -246,13 +256,10 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         );
 
         uint256 id = auctions.length;
-        for (uint256 i = 0; i < bundle.length; i++) {
-            auctionNfts[id][i] = bundle[i];
-        }
 
         auctions.push(
             Inventory({
-        nftCount: bundle.length,
+        pair: pair,
         seller: seller,
         bidder: address(0),
         currency: currency,
@@ -265,8 +272,8 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         })
         );
 
-        emit NewAuction(id, seller, currency, askPrice, endTimestamp, bundle);
-        _linkNFTToAuction(id);
+        auctionNftIndex[pair.nft][pair.tokenId] = id;
+        emit NewAuction(id, seller, currency, askPrice, endTimestamp, pair);
     }
 
     function bid(uint256 id, uint256 offer)
@@ -332,7 +339,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
         inv.status = State.ST_CANCELLED;
         _transferInventoryTo(id, inv.seller);
-        _unlinkNFTToAuction(id);
+        delete auctionNftIndex[inv.pair.nft][inv.pair.tokenId];
         emit AuctionCancelled(id);
     }
 
@@ -361,7 +368,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         uint256 fee = (inv.netBidPrice * feeRate) / 10000;
         if (fee > 0) {
             _transfer(inv.currency, treasuryAddress, fee);
-            if(feeRewardRBIsEnabled){
+            if(feeRewardRBIsEnabled && nftForAccrualRB[address(inv.pair.nft)]){
                 feeRewardRB.accrueRBFromAuction(inv.bidder, address(inv.currency), fee / 2);
                 feeRewardRB.accrueRBFromAuction(inv.seller, address(inv.currency), fee / 2);
             }
@@ -371,7 +378,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         _transfer(inv.currency, inv.seller, inv.netBidPrice - fee);
         inv.status = State.ST_FINISHED;
         _transferInventoryTo(id, inv.bidder);
-        _unlinkNFTToAuction(id);
 
         emit AuctionFinished(id, inv.bidder);
     }
@@ -464,26 +470,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     function _transferInventoryTo(uint256 id, address to) internal {
         Inventory storage inv = auctions[id];
-        for (uint256 i = 0; i < inv.nftCount; i++) {
-            TokenPair storage p = auctionNfts[id][i];
-            p.nft.safeTransferFrom(address(this), to, p.tokenId);
-        }
-    }
-
-    function _linkNFTToAuction(uint256 id) internal {
-        Inventory storage inv = auctions[id];
-        for (uint256 i = 0; i < inv.nftCount; i++) {
-            TokenPair storage p = auctionNfts[id][i];
-            auctionNftIndex[p.nft][p.tokenId] = id;
-        }
-    }
-
-    function _unlinkNFTToAuction(uint256 id) internal {
-        Inventory storage inv = auctions[id];
-        for (uint256 i = 0; i < inv.nftCount; i++) {
-            TokenPair storage p = auctionNfts[id][i];
-            delete auctionNftIndex[p.nft][p.tokenId];
-        }
+        inv.pair.nft.safeTransferFrom(address(this), to, inv.pair.tokenId);
     }
 
     function _isContract(address _addr) internal view returns (bool) {
