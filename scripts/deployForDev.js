@@ -23,7 +23,6 @@ const INIT_CODE_HASH = `0xfea293c909d87cd4153593f077b76bb7e94340200f4ee84211ae8e
 const oracleAddress = `0x2f48cde4cfd0fb4f5c873291d5cf2dc9e61f2db0`;
 const bswTokenAddress = `0x965f527d9159dce6288a2219db51fc6eef120dd1`;
 const usdtTokenAddress = `0x55d398326f99059fF775485246999027B3197955`;
-const tokensList = `./tokens.json`;
 
 //Set parameters to deploy SmartChef NFT
 const wbnbAddress = `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c`;
@@ -64,32 +63,6 @@ async function main() {
     await swapFeeReward.deployTransaction.wait();
     console.log(`SwapFeeReward contract deployed to ${swapFeeReward.address}`);
 
-    console.log(`Add tokens to white list in swap fee reward`);
-    let tokens = fs.readFileSync(tokensList, "utf-8");
-    tokens = JSON.parse(tokens);
-
-    for (const item of tokens) {
-        console.log(`Try to add token ${item.name} address ${item.address} to contract`);
-        let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"])
-        let tx = await swapFeeReward.addWhitelist(item.address, {nonce: nonce});
-        await tx.wait();
-        console.log(`Success`);
-    }
-
-    console.log(`Add pairs to swap fee reward`);
-    let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
-    pairs = JSON.parse(pairs);
-
-    for (const item of pairs) {
-        if(item.enabled){
-            console.log(`Try add pair ${item.name.symbolA}/${item.name.symbolB} with address ${item.address} percent ${item.percent}`);
-            let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]);
-            let tx = await swapFeeReward.addPair(item.percent, item.address, {nonce: nonce});
-            await tx.wait();
-            console.log(`Success`);
-        }
-    }
-
 
     console.log(`Set roles`);
     const RB_SETTER = await biswapNft.RB_SETTER_ROLE();
@@ -103,26 +76,6 @@ async function main() {
     await biswapNft.grantRole(TOKEN_FREEZER, deployer.address);
     //END  Only for tests
 
-    console.log(`Verify contract smartChef`);
-    let res = await hre.run("verify:verify", {
-            address: smartChef.address,
-            constructorArguments: [biswapNft.address]
-        })
-        console.log(res);
-
-    console.log(`Verify contract launchpad`);
-    res = await hre.run("verify:verify", {
-            address: launchpad.address,
-            constructorArguments: [biswapNft.address, oracleAddress, wbnbAddress, usdtTokenAddress]
-        })
-        console.log(res);
-
-    console.log(`Verify contract SwapFeeReward`);
-    res = await hre.run("verify:verify", {
-            address: swapFeeReward.address,
-            constructorArguments: [factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress]
-        })
-        console.log(res);
 
 }
 
