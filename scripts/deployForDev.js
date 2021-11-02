@@ -72,7 +72,7 @@ async function main() {
 
     console.log(`Start deploying SwapFeeReward contract`);
     const SwapFeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
-    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: ++nonce, gasLimit: 3000000});
+    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: ++nonce});
     await swapFeeReward.deployTransaction.wait();
     console.log(`SwapFeeReward contract deployed to ${swapFeeReward.address}`);
 
