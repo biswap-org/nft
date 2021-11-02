@@ -1,7 +1,7 @@
 const { network, ethers  } = require(`hardhat`);
 const fs = require(`fs`)
 
-const feeRewardAddress = `0xec40eAea12390aD2816c022c3B98e473737FF3BD`;
+const feeRewardAddress = ``;
 const tokensList = `./tokens.json`;
 
 

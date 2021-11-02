@@ -27,6 +27,9 @@ const usdtTokenAddress = `0x55d398326f99059fF775485246999027B3197955`;
 //Set parameters to deploy SmartChef NFT
 const wbnbAddress = `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c`;
 
+//Set parameters to launchpad
+const treasuryAddressLaunchpad = `0x6332Da1565F0135E7b7Daa41C419106Af93274BA`
+
 function expandTo18Decimals(n) {
     return (new BigNumber.from(n)).mul((new BigNumber.from(10)).pow(18))
 }
@@ -55,6 +58,9 @@ async function main() {
     console.log(`Launchpad NFT deployed to ${launchpad.address}`);
     console.log(`Set white list deal token USDT`);
     let tx = await launchpad.setWhitelistDealToken(usdtTokenAddress);
+    await tx.wait();
+    console.log(`set treasury address to launchpad`)
+    tx = await launchpad.setTreasuryAddress(treasuryAddressLaunchpad);
     await tx.wait();
 
     console.log(`Start deploying SwapFeeReward contract`);

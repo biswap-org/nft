@@ -113,6 +113,7 @@ interface IBSWPair {
 
 interface IBswToken is IERC20 {
     function mint(address to, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 }
 
 interface IBiswapNFT {
@@ -390,7 +391,7 @@ contract SwapFeeRewardWithRB is Ownable, ReentrancyGuard {
             _balances[msg.sender] = _balances[msg.sender].sub(balance);
             totalMined = totalMined.add(balance);
             //SFR-04
-            if(bswToken.mint(msg.sender, balance)){
+            if(bswToken.transfer(msg.sender, balance)){
                 emit Withdraw(msg.sender, balance);
                 return true;
             }
