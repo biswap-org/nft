@@ -113,7 +113,7 @@ interface IBSWPair {
 
 interface IBswToken is IERC20 {
     function mint(address to, uint256 amount) external returns (bool);
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external override returns (bool);
 }
 
 interface IBiswapNFT {
