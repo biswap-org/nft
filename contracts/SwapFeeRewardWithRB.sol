@@ -262,7 +262,6 @@ contract SwapFeeRewardWithRB is Ownable, ReentrancyGuard {
     function getSwapFee(address tokenA, address tokenB) internal view returns (uint swapFee) {
         //SFR-05
         swapFee = uint(1000).sub(IBSWPair(pairFor(tokenA, tokenB)).swapFee());
-        //        swapFee = uint(10000).sub(10); //TODO del in prod!!!
     }
 
     function setPhase(uint _newPhase) public onlyOwner returns (bool){

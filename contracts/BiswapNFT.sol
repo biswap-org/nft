@@ -40,21 +40,12 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     event Initialize(string baseURI, uint initialRobiBoost, uint burnRBPeriod);
     event TokenMint(address indexed to, uint indexed tokenId, uint level, uint robiBoost);
 
-    //TODO delete in prod
-    //    constructor(){
-    //        initialize("http://", 1000000000000000000, 14);
-    //        for(uint i; i <= 10; i++){
-    //            mint(msg.sender);
-    //        }
-    //
-    //    }
-
     function initialize(
         string memory baseURI,
         uint initialRobiBoost,
         uint burnRBPeriod
     ) public initializer {
-        __ERC721_init("BiSwapNFT", "BSWNFT"); //TODO rename token in prod
+        __ERC721_init("BiswapRobbiesEarn", "BRE");
         __ERC721Enumerable_init();
         __AccessControl_init_unchained();
         __ReentrancyGuard_init();
@@ -81,29 +72,6 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         _levelTable[5] = 2;
         _levelTable[6] = 0;
 
-        { //TODO delete in prod
-            _setupRole(TOKEN_MINTER_ROLE, msg.sender); //TODO delete in prod
-            _setupRole(RB_SETTER_ROLE, msg.sender); //TODO delete in prod
-
-            increaseRobiBoost(msg.sender, block.timestamp/86400, 1000e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 1 days)/86400, 500e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 2 days)/86400, 300e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 3 days)/86400, 800e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 4 days)/86400, 220e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 5 days)/86400, 10e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 6 days)/86400, 13e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 7 days)/86400, 3e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 8 days)/86400, 6532e12);
-            increaseRobiBoost(msg.sender, (block.timestamp - 9 days)/86400, 111113e12);
-            increaseRobiBoost(msg.sender, (block.timestamp - 10 days)/86400, 134113e14);
-            increaseRobiBoost(msg.sender, (block.timestamp - 11 days)/86400, 3333e14);
-            increaseRobiBoost(msg.sender, (block.timestamp - 12 days)/86400, 2222e14);
-            increaseRobiBoost(msg.sender, (block.timestamp - 13 days)/86400, 7777e14);
-            increaseRobiBoost(msg.sender, (block.timestamp - 14 days)/86400, 5555e14);
-            increaseRobiBoost(msg.sender, (block.timestamp - 15 days)/86400, 1000e18);
-            increaseRobiBoost(msg.sender, (block.timestamp - 16 days)/86400, 10000e18);
-
-        }
         //BNF-01, SFR-01
         emit Initialize(baseURI, initialRobiBoost, burnRBPeriod);
     }

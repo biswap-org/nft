@@ -36,12 +36,6 @@ function expandTo18Decimals(n) {
 
 let biswapNft, swapFeeReward, smartChef, launchpad;
 
-// async function getNextNonce(address){
-//     let nonce = (await network.provider.send(`eth_getTransactionCount`, [address, "latest"]))+1
-//     console.log(`nonce: `, parseInt(nonce, 16));
-//     return nonce;
-// }
-
 async function main() {
     const [deployer] = await ethers.getSigners();
     console.log(`Deployer address: ${ deployer.address}`);
@@ -84,10 +78,6 @@ async function main() {
     await biswapNft.grantRole(RB_SETTER, swapFeeReward.address, {nonce: ++nonce, gasLimit: 3000000});
     await biswapNft.grantRole(TOKEN_FREEZER, smartChef.address, {nonce: ++nonce, gasLimit: 3000000});
     await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce, gasLimit: 3000000});
-
-    //Only for tests
-    await biswapNft.grantRole(TOKEN_FREEZER, deployer.address, {nonce: ++nonce, gasLimit: 3000000});
-    //END  Only for tests
 
 }
 
