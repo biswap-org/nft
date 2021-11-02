@@ -90,11 +90,8 @@ contract SmartChefNFT is Ownable, ReentrancyGuard {
             rewardTokens[_newToken].startBlock = _startBlock;
         }
         rewardTokens[_newToken].rewardPerBlock = _rewardPerBlock;
-        if(IERC20(_newToken).balanceOf(address(this)) > rewardTokens[_newToken].rewardsForWithdrawal){
-            rewardTokens[_newToken].enabled = true;
-        } else {
-            rewardTokens[_newToken].enabled = false;
-        }
+        rewardTokens[_newToken].enabled = true;
+
         emit AddNewTokenReward(_newToken);
     }
 
