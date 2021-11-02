@@ -36,42 +36,43 @@ function expandTo18Decimals(n) {
 
 let biswapNft, swapFeeReward, smartChef, launchpad;
 
-async function getNextNonce(address){
-    let nonce = (await network.provider.send(`eth_getTransactionCount`, [address, "latest"]))+1
-    console.log(`nonce: `, parseInt(nonce, 16));
-    return nonce;
-}
+// async function getNextNonce(address){
+//     let nonce = (await network.provider.send(`eth_getTransactionCount`, [address, "latest"]))+1
+//     console.log(`nonce: `, parseInt(nonce, 16));
+//     return nonce;
+// }
 
 async function main() {
     const [deployer] = await ethers.getSigners();
     console.log(`Deployer address: ${ deployer.address}`);
+    let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]);
     console.log(`Start deploying Biswap NFT contract`);
     const BiswapNFT = await ethers.getContractFactory(`BiswapNFT`);
-    biswapNft = await upgrades.deployProxy(BiswapNFT, [baseURI, initialRB, burnRBPeriod]);
+    biswapNft = await upgrades.deployProxy(BiswapNFT, [baseURI, initialRB, burnRBPeriod], {nonce: nonce});
     await biswapNft.deployTransaction.wait();
     console.log(`Biswap NFT deployed to ${biswapNft.address}`);
 
     console.log(`Start deploying SmartChef NFT`);
     const SmartChef = await ethers.getContractFactory(`SmartChefNFT`);
-    smartChef = await SmartChef.deploy(biswapNft.address, {nonce: await getNextNonce(deployer.address)});
+    smartChef = await SmartChef.deploy(biswapNft.address, {nonce: ++nonce});
     await smartChef.deployTransaction.wait();
     console.log(`SmartChefNFT deployed to ${smartChef.address}`);
 
     console.log(`Start deploy launchpad NFT`);
     const Launchpad = await ethers.getContractFactory('LaunchpadNFT');
-    launchpad = await Launchpad.deploy(biswapNft.address, oracleAddress, wbnbAddress, usdtTokenAddress, {nonce: await getNextNonce(deployer.address)});
+    launchpad = await Launchpad.deploy(biswapNft.address, oracleAddress, wbnbAddress, usdtTokenAddress, {nonce: ++nonce});
     await launchpad.deployTransaction.wait();
     console.log(`Launchpad NFT deployed to ${launchpad.address}`);
     console.log(`Set white list deal token USDT`);
-    let tx = await launchpad.setWhitelistDealToken(usdtTokenAddress, {nonce: await getNextNonce(deployer.address)});
+    let tx = await launchpad.setWhitelistDealToken(usdtTokenAddress, {nonce: ++nonce});
     await tx.wait();
     console.log(`set treasury address to launchpad`)
-    tx = await launchpad.setTreasuryAddress(treasuryAddressLaunchpad, {nonce: await getNextNonce(deployer.address)});
+    tx = await launchpad.setTreasuryAddress(treasuryAddressLaunchpad, {nonce: ++nonce});
     await tx.wait();
 
     console.log(`Start deploying SwapFeeReward contract`);
     const SwapFeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
-    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: await getNextNonce(deployer.address)});
+    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: ++nonce});
     await swapFeeReward.deployTransaction.wait();
     console.log(`SwapFeeReward contract deployed to ${swapFeeReward.address}`);
 
@@ -80,12 +81,12 @@ async function main() {
     const RB_SETTER = await biswapNft.RB_SETTER_ROLE();
     const TOKEN_FREEZER = await biswapNft.TOKEN_FREEZER();
     const LAUNCHPAD_TOKEN_MINTER = await biswapNft.LAUNCHPAD_TOKEN_MINTER();
-    await biswapNft.grantRole(RB_SETTER, swapFeeReward.address, {nonce: await getNextNonce(deployer.address)});
-    await biswapNft.grantRole(TOKEN_FREEZER, smartChef.address, {nonce: await getNextNonce(deployer.address)});
-    await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: await getNextNonce(deployer.address)});
+    await biswapNft.grantRole(RB_SETTER, swapFeeReward.address, {nonce: ++nonce});
+    await biswapNft.grantRole(TOKEN_FREEZER, smartChef.address, {nonce: ++nonce});
+    await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce});
 
     //Only for tests
-    await biswapNft.grantRole(TOKEN_FREEZER, deployer.address, {nonce: await getNextNonce(deployer.address)});
+    await biswapNft.grantRole(TOKEN_FREEZER, deployer.address, {nonce: ++nonce});
     //END  Only for tests
 
 
