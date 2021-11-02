@@ -78,7 +78,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             Launchpad({
         totalCount: 2500,
         soldCount: 0,
-        priceInUSD: 10 ether,
+        priceInUSD: 10 ether/1e6,
         level: 1,
         robiBoost: 1e18,
         maxToUser: 6
@@ -88,7 +88,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             Launchpad({
         totalCount: 250,
         soldCount: 0,
-        priceInUSD: 200 ether,
+        priceInUSD: 200 ether/1e6,
         level: 2,
         robiBoost: 66e18,
         maxToUser: 1
@@ -98,7 +98,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             Launchpad({
         totalCount: 50,
         soldCount: 0,
-        priceInUSD: 1000 ether,
+        priceInUSD: 1000 ether/1e6,
         level: 3,
         robiBoost: 550e18,
         maxToUser: 1
@@ -108,7 +108,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             Launchpad({
         totalCount: 10,
         soldCount: 0,
-        priceInUSD: 6000 ether,
+        priceInUSD: 6000 ether/1e6,
         level: 4,
         robiBoost: 4400e18,
         maxToUser: 1
@@ -118,7 +118,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             Launchpad({
         totalCount: 1,
         soldCount: 0,
-        priceInUSD: 40000 ether,
+        priceInUSD: 40000 ether/1e6,
         level: 5,
         robiBoost: 33000e18,
         maxToUser: 1

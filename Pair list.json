@@ -1,0 +1,205 @@
+[{
+"pid": 0,
+"name": { "symbolA": "USDT", "symbolB": "BUSD" },
+"address": "0xDA8ceb724A06819c0A5cDb4304ea0cB27F8304cF",
+"percent": "70",
+"enabled": true
+}, {
+"pid": 1,
+"name": { "symbolA": "USDT", "symbolB": "WBNB" },
+"address": "0x8840C6252e2e86e545deFb6da98B2a0E26d8C1BA",
+"percent": "70",
+"enabled": true
+}, {
+"pid": 2,
+"name": { "symbolA": "WBNB", "symbolB": "BUSD" },
+"address": "0xaCAac9311b0096E04Dfe96b6D87dec867d3883Dc",
+"percent": "70",
+"enabled": true
+}, {
+"pid": 3,
+"name": { "symbolA": "USDT", "symbolB": "USDC" },
+"address": "0x1483767E665B3591677Fd49F724bf7430C18Bf83",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 4,
+"name": { "symbolA": "ETH", "symbolB": "USDT" },
+"address": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 5,
+"name": { "symbolA": "USDT", "symbolB": "BTCB" },
+"address": "0xa987f0b7098585c735cD943ee07544a84e923d1D",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 6,
+"name": { "symbolA": "ETH", "symbolB": "BTCB" },
+"address": "0x6216E04cd40DB2c6FBEd64f1B5830A98D3A91740",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 7,
+"name": { "symbolA": "BTCB", "symbolB": "WBNB" },
+"address": "0xC7e9d76ba11099AF3F330ff829c5F442d571e057",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 8,
+"name": { "symbolA": "USDT", "symbolB": "BSW" },
+"address": "0x2b30c317ceDFb554Ec525F85E79538D59970BEb0",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 9,
+"name": { "symbolA": "BSW", "symbolB": "WBNB" },
+"address": "0x46492B26639Df0cda9b2769429845cb991591E0A",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 10,
+"name": { "symbolA": "Cake", "symbolB": "WBNB" },
+"address": "0x3d94d03eb9ea2D4726886aB8Ac9fc0F18355Fd13",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 11,
+"name": { "symbolA": "DOT", "symbolB": "WBNB" },
+"address": "0xe7fbB8bd95322618e925affd84D7eC0E32DC0e57",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 12,
+"name": { "symbolA": "WBNB", "symbolB": "UNI" },
+"address": "0x153dC2eBcB551799b13D4E6Ff84fC34C7AEDf241",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 13,
+"name": { "symbolA": "ADA", "symbolB": "WBNB" },
+"address": "0x8860922Eb2795aB0D57363653Dd7EBf18D7c0A42",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 14,
+"name": { "symbolA": "TUSD", "symbolB": "BUSD" },
+"address": "0x56D8bCD36462dE903A19C6B28eFc9d2d11Fd9Ff4",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 15,
+"name": { "symbolA": "UST", "symbolB": "BUSD" },
+"address": "0x9E78183dD68cC81bc330CAF3eF84D354a58303B5",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 16,
+"name": { "symbolA": "LTC", "symbolB": "USDT" },
+"address": "0x412b607f4cBE9CaE77C6F720A701CD60fa0EBD3f",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 17,
+"name": { "symbolA": "VAI", "symbolB": "BUSD" },
+"address": "0x2B7e5bF4f8C6a9456A1580a4e3C6fEb161555df0",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 18,
+"name": { "symbolA": "XRP", "symbolB": "WBNB" },
+"address": "0x5dc30Bb8D7F02eFEf28f7E637D17Aea13Fa96906",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 19,
+"name": { "symbolA": "DOGE", "symbolB": "WBNB" },
+"address": "0x1eF315fa08e0E1B116D97E3dFE0aF292Ed8b7f02",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 20,
+"name": { "symbolA": "WBNB", "symbolB": "LINK" },
+"address": "0x16Fe21c91c426E603977b1C6EcD59Fc510a518C2",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 21,
+"name": { "symbolA": "ETH", "symbolB": "WBNB" },
+"address": "0x5bf6941f029424674bb93A43b79fc46bF4A67c21",
+"percent": "80",
+"enabled": true
+}, {
+"pid": 22,
+"name": { "symbolA": "DAI", "symbolB": "USDT" },
+"address": "0xe0caab61EE7A12d03B268E1f6A56537aC1b61D13",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 23,
+"name": { "symbolA": "WBNB", "symbolB": "BAKE" },
+"address": "0x4c372698eaF2DA2A04dfEaDFE14DB0635fEfdB34",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 24,
+"name": { "symbolA": "FIL", "symbolB": "USDT" },
+"address": "0x52A499333A7837a72a9750849285E0bb8552dE5A",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 25,
+"name": { "symbolA": "WBNB", "symbolB": "XVS" },
+"address": "0x753C734Dfe05aF28A732C033e26Ea6D369e07662",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 26,
+"name": { "symbolA": "TWT", "symbolB": "WBNB" },
+"address": "0xF1A12EC907B3d87b6De7a9A5C3820566c621f68B",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 27,
+"name": { "symbolA": "WBNB", "symbolB": "BUNNY" },
+"address": "0x33521cc21ABD8423A8e64DE397a414Ea200Fd9af",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 28,
+"name": { "symbolA": "IRON", "symbolB": "BUSD" },
+"address": "0x247ffA1E3B9f455719539387E52220AD4b4e0Ba8",
+"percent": "49",
+"enabled": false
+}, {
+"pid": 29,
+"name": { "symbolA": "WEX", "symbolB": "WBNB" },
+"address": "0x48aB3b9D41186b1c9f190B5a7ED23bA697Abc7AD",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 30,
+"name": { "symbolA": "BSW", "symbolB": "BFG" },
+"address": "0x88d483697F8E3FC8f5674F322d3a59ce786aCcD5",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 31,
+"name": { "symbolA": "RABBIT", "symbolB": "BUSD" },
+"address": "0xF3A525c036C05419dBC9ec682A39def0e3AEbB90",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 32,
+"name": { "symbolA": "WBNB", "symbolB": "DPET" },
+"address": "0x8d54AE6A4E9247E35f4274B274906a99e9aF52f1",
+"percent": "49",
+"enabled": true
+}, {
+"pid": 33,
+"name": { "symbolA": "WBNB", "symbolB": "TENFI" },
+"address": "0xf9FAdb9222848Cde36c0C06cF88776DC41937083",
+"percent": "49",
+"enabled": true
+}]
