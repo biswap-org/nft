@@ -58,7 +58,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
     mapping(address => mapping(uint => uint)) public boughtCount; //Bought NFT`s by user: address => launches => tickets count
 
     event ConfigWhitelistDealToken(address indexed token, bool enabled);
-    event LaunchpadExecuted(address indexed user, address indexed dealToken, uint launchIndex);
+    event LaunchpadExecuted(address indexed user, address indexed dealToken, uint launchIndex, uint robiboost);
 
     /**
      * @notice Constructor
@@ -235,7 +235,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
             IERC20(_dealToken).safeTransferFrom(msg.sender, treasuryAddress, price);
         }
         biswapNFT.launchpadMint(msg.sender, _launch.level, _launch.robiBoost);
-        emit LaunchpadExecuted(msg.sender, _dealToken, _launchIndex);
+        emit LaunchpadExecuted(msg.sender, _dealToken, _launchIndex, _launch.robiBoost);
     }
 
     /*

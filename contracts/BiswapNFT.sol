@@ -38,6 +38,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     event LevelUp(address indexed user, uint indexed newLevel, uint[] parentsTokensId);
     //BNF-01, SFR-01
     event Initialize(string baseURI, uint initialRobiBoost, uint burnRBPeriod);
+    event TokenMint(address indexed to, uint indexed tokenId, uint level, uint robiBoost);
 
     //TODO delete in prod
     //    constructor(){
@@ -242,10 +243,10 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         require(to != address(0), "Address can not be zero");
         _lastTokenId +=1;
         uint tokenId = _lastTokenId;
-        _safeMint(to, tokenId);
         _tokens[tokenId].robiBoost = _initialRobiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = 1; //start from 1 level
+        _safeMint(to, tokenId);
     }
 
     //BNF-02, SCN-01, SFR-02
@@ -254,10 +255,10 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         require(_rbTable[level] >= robiBoost, "RB Value out of limit");
         _lastTokenId +=1;
         uint tokenId = _lastTokenId;
-        _safeMint(to, tokenId);
         _tokens[tokenId].robiBoost = robiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = level;
+        _safeMint(to, tokenId);
     }
 
     function levelUp(uint[] calldata tokenId) public nonReentrant {
@@ -306,6 +307,11 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     function _baseURI() internal view override returns (string memory) {
         return _internalBaseURI;
+    }
+
+    function _safeMint(address to, uint256 tokenId) internal override {
+        super._safeMint(to, tokenId);
+        emit TokenMint(to, tokenId, _tokens[tokenId].level, _tokens[tokenId].robiBoost);
     }
 
     function _beforeTokenTransfer(
@@ -378,10 +384,10 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         newRobiBoost = newRobiBoost + newRobiBoost * _levelUpPercent / 100;
         _lastTokenId +=1;
         uint newTokenId = _lastTokenId;
-        _safeMint(msg.sender, newTokenId);
         _tokens[newTokenId].robiBoost = newRobiBoost;
         _tokens[newTokenId].createTimestamp = block.timestamp;
         _tokens[newTokenId].level = level;
+        _safeMint(msg.sender, newTokenId);
     }
 
     function increaseRobiBoost(address user, uint day, uint amount) private {

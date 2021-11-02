@@ -364,8 +364,9 @@ contract SwapFeeRewardWithRB is Ownable, ReentrancyGuard {
         if (quantity > 0) {
             //SFR-06
             totalAccruedRB = totalAccruedRB.add(quantity);
-            require(totalAccruedRB <= currentPhaseRB.mul(maxAccruedRBInPhase), "SwapFeeReward: Accrued all robi boost in this phase");
-            biswapNFT.accrueRB(account, quantity);
+            if(totalAccruedRB <= currentPhaseRB.mul(maxAccruedRBInPhase)){
+                biswapNFT.accrueRB(account, quantity);
+            }
         }
     }
 

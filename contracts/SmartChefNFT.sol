@@ -100,21 +100,23 @@ contract SmartChefNFT is Ownable, ReentrancyGuard {
 
     function disableTokenReward(address _token) public onlyOwner {
         require(isTokenInList(_token), "Token not in the list");
+        updatePool();
         rewardTokens[_token].enabled = false;
         emit DisableTokenReward(_token);
     }
 
     function enableTokenReward(address _token, uint _startBlock, uint _rewardPerBlock) public onlyOwner {
         require(isTokenInList(_token), "Token not in the list");
-        require(_startBlock >= block.number, "Start block Must be later than current");
-        if(IERC20(_token).balanceOf(address(this)) > rewardTokens[_token].rewardsForWithdrawal){
-            rewardTokens[_token].enabled = true;
-            rewardTokens[_token].startBlock = _startBlock;
-            rewardTokens[_token].rewardPerBlock = _rewardPerBlock;
-            emit ChangeTokenReward(_token, _rewardPerBlock);
-        } else {
-            revert("Not enough balance of token");
+        require(!rewardTokens[_token].enabled, "Reward token is enabled");
+        if(_startBlock == 0){
+            _startBlock = block.number + 1;
         }
+        require(_startBlock >= block.number, "Start block Must be later than current");
+        rewardTokens[_token].enabled = true;
+        rewardTokens[_token].startBlock = _startBlock;
+        rewardTokens[_token].rewardPerBlock = _rewardPerBlock;
+        emit ChangeTokenReward(_token, _rewardPerBlock);
+
         updatePool();
     }
 
@@ -140,9 +142,15 @@ contract SmartChefNFT is Ownable, ReentrancyGuard {
         for(uint i = 0; i < listRewardTokens.length; i++){
             address curToken = listRewardTokens[i];
             RewardToken memory curRewardToken = rewardTokens[curToken];
-            if (_multiplier != 0 && _totalRBSupply != 0) {
+            if (_multiplier != 0 && _totalRBSupply != 0 && curRewardToken.enabled == true) {
+                uint curMultiplier;
+                if(getMultiplier(curRewardToken.startBlock, block.number) < _multiplier){
+                    curMultiplier = getMultiplier(curRewardToken.startBlock, block.number);
+                } else {
+                    curMultiplier = _multiplier;
+                }
                 _accTokenPerShare = curRewardToken.accTokenPerShare +
-                (_multiplier * curRewardToken.rewardPerBlock * 1e12 / _totalRBSupply);
+                (curMultiplier * curRewardToken.rewardPerBlock * 1e12 / _totalRBSupply);
             } else {
                 _accTokenPerShare = curRewardToken.accTokenPerShare;
             }
@@ -193,7 +201,7 @@ contract SmartChefNFT is Ownable, ReentrancyGuard {
     }
 
     //SCN-01, SFR-02
-    function _withdrawReward() internal nonReentrant {
+    function _withdrawReward() internal {
         updatePool();
         UserInfo memory user = userInfo[msg.sender];
         address[] memory _listRewardTokens = listRewardTokens;
