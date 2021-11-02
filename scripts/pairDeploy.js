@@ -20,7 +20,7 @@ async function main() {
     for (const item of tokens) {
         console.log(`Try to add token ${item.name} address ${item.address} to contract`);
         console.log(`nonce: `, parseInt(nonce, 16));
-        let tx = await swapFeeReward.addWhitelist(item.address, {nonce: ++nonce});
+        let tx = await swapFeeReward.addWhitelist(item.address, {nonce: ++nonce, gasLimit: 3000000});
         await tx.wait();
     }
 
@@ -32,7 +32,7 @@ async function main() {
         if (item.enabled) {
             console.log(`Try add pair ${item.name.symbolA}/${item.name.symbolB} with address ${item.address} percent ${item.percent}`);
             console.log(`nonce: `, parseInt(nonce, 16));
-            let tx = await swapFeeReward.addPair(item.percent, item.address, {nonce: ++nonce});
+            let tx = await swapFeeReward.addPair(item.percent, item.address, {nonce: ++nonce, gasLimit: 3000000});
             await tx.wait();
         }
     }

@@ -64,15 +64,15 @@ async function main() {
     await launchpad.deployTransaction.wait();
     console.log(`Launchpad NFT deployed to ${launchpad.address}`);
     console.log(`Set white list deal token USDT`);
-    let tx = await launchpad.setWhitelistDealToken(usdtTokenAddress, {nonce: ++nonce});
+    let tx = await launchpad.setWhitelistDealToken(usdtTokenAddress, {nonce: ++nonce, gasLimit: 3000000});
     await tx.wait();
     console.log(`set treasury address to launchpad`)
-    tx = await launchpad.setTreasuryAddress(treasuryAddressLaunchpad, {nonce: ++nonce});
+    tx = await launchpad.setTreasuryAddress(treasuryAddressLaunchpad, {nonce: ++nonce, gasLimit: 3000000});
     await tx.wait();
 
     console.log(`Start deploying SwapFeeReward contract`);
     const SwapFeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
-    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: ++nonce});
+    swapFeeReward = await SwapFeeReward.deploy(factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNft.address, bswTokenAddress, usdtTokenAddress, {nonce: ++nonce, gasLimit: 3000000});
     await swapFeeReward.deployTransaction.wait();
     console.log(`SwapFeeReward contract deployed to ${swapFeeReward.address}`);
 
@@ -81,14 +81,13 @@ async function main() {
     const RB_SETTER = await biswapNft.RB_SETTER_ROLE();
     const TOKEN_FREEZER = await biswapNft.TOKEN_FREEZER();
     const LAUNCHPAD_TOKEN_MINTER = await biswapNft.LAUNCHPAD_TOKEN_MINTER();
-    await biswapNft.grantRole(RB_SETTER, swapFeeReward.address, {nonce: ++nonce});
-    await biswapNft.grantRole(TOKEN_FREEZER, smartChef.address, {nonce: ++nonce});
-    await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce});
+    await biswapNft.grantRole(RB_SETTER, swapFeeReward.address, {nonce: ++nonce, gasLimit: 3000000});
+    await biswapNft.grantRole(TOKEN_FREEZER, smartChef.address, {nonce: ++nonce, gasLimit: 3000000});
+    await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce, gasLimit: 3000000});
 
     //Only for tests
-    await biswapNft.grantRole(TOKEN_FREEZER, deployer.address, {nonce: ++nonce});
+    await biswapNft.grantRole(TOKEN_FREEZER, deployer.address, {nonce: ++nonce, gasLimit: 3000000});
     //END  Only for tests
-
 
 }
 
