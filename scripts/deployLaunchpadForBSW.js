@@ -1,4 +1,5 @@
 const { ethers, network } = require(`hardhat`);
+const hre = require("hardhat");
 
 //Set parameters to launchpad
 const treasuryAddress = `0x6332Da1565F0135E7b7Daa41C419106Af93274BA`;
@@ -33,6 +34,15 @@ async function main() {
   } else{
     console.log(`WARNING!!! Role not added!!!`);
   }
+
+  console.log(`Verify contract`);
+  let res = await hre.run("verify:verify", {
+    address: launchpad.address,
+    constructorArguments: [biswapNFTAddress, dealTokenAddress, treasuryAddress]
+  })
+  console.log(res);
+
+
 }
 
 main()
