@@ -52,7 +52,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = _treasuryAddress;
         launches.push(
             Launchpad({
-                totalCount : 2500,
+                totalCount : 5000,
                 soldCount : 0,
                 price : 10 ether,
                 level : 1,
@@ -62,7 +62,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         );
         launches.push(
             Launchpad({
-                totalCount : 250,
+                totalCount : 450,
                 soldCount : 0,
                 price : 200 ether,
                 level : 2,
@@ -72,7 +72,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         );
         launches.push(
             Launchpad({
-                totalCount : 50,
+                totalCount : 86,
                 soldCount : 0,
                 price : 1000 ether,
                 level : 3,
@@ -82,7 +82,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         );
         launches.push(
             Launchpad({
-                totalCount : 10,
+                totalCount : 17,
                 soldCount : 0,
                 price : 6000 ether,
                 level : 4,
@@ -92,7 +92,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         );
         launches.push(
             Launchpad({
-                totalCount : 1,
+                totalCount : 2,
                 soldCount : 0,
                 price : 40000 ether,
                 level : 5,
@@ -107,7 +107,7 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
      * @dev Callable by contract owner
      * @param _treasuryAddress: Treasury address
      */
-    function setTreasuryAddress(address payable _treasuryAddress) public onlyOwner {
+    function setTreasuryAddress(address _treasuryAddress) public onlyOwner {
         treasuryAddress = _treasuryAddress;
     }
 
