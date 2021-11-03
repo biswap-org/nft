@@ -1,8 +1,5 @@
 #Idea
-/.idea/.gitignore
-/.idea/modules.xml
-/.idea/nft.iml
-/.idea/vcs.xml
+.idea
 
 node_modules
 .env
@@ -12,3 +9,5 @@ node_modules
 cache
 artifacts
 /secrets.json
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/codeStyles/Project.xml

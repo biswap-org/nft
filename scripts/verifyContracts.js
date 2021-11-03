@@ -1,9 +1,10 @@
 const hre = require('hardhat');
 
-const biswapNFTAddress = ``;
-const swapFeeRewardNFTAddress = ``;
-const launchpadAddress = '';
-const smartChefAddress = '';
+const biswapNFTAddress = `0x4BBF75cc94E7176e62A100079b0e8E543819Cb4d`;
+const biswapNFTProxy = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
+const swapFeeRewardNFTAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
+const launchpadAddress = '0xdd9f1b88CaFD688b11cbB403eEE38f5f167D55c2';
+const smartChefAddress = '0xE96cc136B7079380c5cC22661Ead88b0E30dFe6E';
 
 
 //Set parameters to deploy Swap fee reward
@@ -31,21 +32,21 @@ async function main() {
     console.log(`Verify contract smartChef`);
     res = await hre.run("verify:verify", {
         address: smartChefAddress,
-        constructorArguments: [biswapNFTAddress]
+        constructorArguments: [biswapNFTProxy]
     })
     console.log(res);
 
     console.log(`Verify contract launchpad`);
     res = await hre.run("verify:verify", {
         address: launchpadAddress,
-        constructorArguments: [biswapNFTAddress, oracleAddress, wbnbAddress, usdtTokenAddress]
+        constructorArguments: [biswapNFTProxy, oracleAddress, wbnbAddress, usdtTokenAddress]
     })
     console.log(res);
 
     console.log(`Verify contract SwapFeeReward`);
     res = await hre.run("verify:verify", {
         address: swapFeeRewardNFTAddress,
-        constructorArguments: [factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNFTAddress, bswTokenAddress, usdtTokenAddress]
+        constructorArguments: [factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNFTProxy, bswTokenAddress, usdtTokenAddress]
     })
     console.log(res);
 
