@@ -52,54 +52,54 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = _treasuryAddress;
         launches.push(
             Launchpad({
-                totalCount : 5000,
+                totalCount : 20000,
                 soldCount : 0,
-                price : 10 ether,
+                price : 12 ether,
                 level : 1,
                 robiBoost : 1e18,
-                maxToUser : 6
+                maxToUser : 3
             })
         );
-        launches.push(
-            Launchpad({
-                totalCount : 450,
-                soldCount : 0,
-                price : 200 ether,
-                level : 2,
-                robiBoost : 66e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 86,
-                soldCount : 0,
-                price : 1000 ether,
-                level : 3,
-                robiBoost : 550e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 17,
-                soldCount : 0,
-                price : 6000 ether,
-                level : 4,
-                robiBoost : 4400e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 2,
-                soldCount : 0,
-                price : 40000 ether,
-                level : 5,
-                robiBoost : 33000e18,
-                maxToUser : 1
-            })
-        );
+//        launches.push(
+//            Launchpad({
+//                totalCount : 450,
+//                soldCount : 0,
+//                price : 200 ether,
+//                level : 2,
+//                robiBoost : 66e18,
+//                maxToUser : 1
+//            })
+//        );
+//        launches.push(
+//            Launchpad({
+//                totalCount : 86,
+//                soldCount : 0,
+//                price : 1000 ether,
+//                level : 3,
+//                robiBoost : 550e18,
+//                maxToUser : 1
+//            })
+//        );
+//        launches.push(
+//            Launchpad({
+//                totalCount : 17,
+//                soldCount : 0,
+//                price : 6000 ether,
+//                level : 4,
+//                robiBoost : 4400e18,
+//                maxToUser : 1
+//            })
+//        );
+//        launches.push(
+//            Launchpad({
+//                totalCount : 2,
+//                soldCount : 0,
+//                price : 40000 ether,
+//                level : 5,
+//                robiBoost : 33000e18,
+//                maxToUser : 1
+//            })
+//        );
     }
 
     /**
