@@ -27,8 +27,8 @@ async function main() {
   let biswapNft = await BiswapNFT.attach(biswapNFTAddress);
 
   const LAUNCHPAD_TOKEN_MINTER = await biswapNft.LAUNCHPAD_TOKEN_MINTER();
-  await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce, gasLimit: 3000000});
-
+  let tx = await biswapNft.grantRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address, {nonce: ++nonce, gasLimit: 3000000});
+  await tx.wait();
   if(await biswapNft.hasRole(LAUNCHPAD_TOKEN_MINTER, launchpad.address)){
     console.log(`Role LAUNCHPAD_TOKEN_MINTER successfully added to address ${launchpad.address}`);
   } else{
@@ -41,8 +41,6 @@ async function main() {
     constructorArguments: [biswapNFTAddress, dealTokenAddress, treasuryAddress]
   })
   console.log(res);
-
-
 }
 
 main()
