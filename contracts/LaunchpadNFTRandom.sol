@@ -18,7 +18,7 @@ interface IBiswapNFT {
  * @title Biswap NFT Launchpad
  * @notice Pre-market sell Biswap NFT tokens.
  */
-contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
+contract LaunchpadNftRandom is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     IBiswapNFT biswapNFT;
@@ -34,7 +34,13 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         uint32 maxToUser;
     }
 
+    struct Brackets {
+        uint32 count;
+        uint16 robiBoost;
+    }
+
     Launchpad[] public launches;
+    Brackets[6] public brackets;
     mapping(address => mapping(uint => uint)) public boughtCount; //Bought NFT`s by user: address => launches => tickets count
 
     event LaunchpadExecuted(address indexed user, uint launchIndex, uint robiboost);
@@ -52,54 +58,60 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = _treasuryAddress;
         launches.push(
             Launchpad({
-                totalCount : 5000,
+                totalCount : 30000,
                 soldCount : 0,
-                price : 10 ether,
+                price : 1 ether,
                 level : 1,
-                robiBoost : 1e18,
-                maxToUser : 6
+                robiBoost : 0,
+                maxToUser : 30000
             })
         );
-        launches.push(
-            Launchpad({
-                totalCount : 450,
-                soldCount : 0,
-                price : 200 ether,
-                level : 2,
-                robiBoost : 66e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 86,
-                soldCount : 0,
-                price : 1000 ether,
-                level : 3,
-                robiBoost : 550e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 17,
-                soldCount : 0,
-                price : 6000 ether,
-                level : 4,
-                robiBoost : 4400e18,
-                maxToUser : 1
-            })
-        );
-        launches.push(
-            Launchpad({
-                totalCount : 2,
-                soldCount : 0,
-                price : 40000 ether,
-                level : 5,
-                robiBoost : 33000e18,
-                maxToUser : 1
-            })
-        );
+
+        brackets[0].count = 1500;
+        brackets[0].robiBoost = 10;
+        brackets[1].count = 2100;
+        brackets[1].robiBoost = 5;
+        brackets[2].count = 2400;
+        brackets[2].robiBoost = 9;
+        brackets[3].count = 3000;
+        brackets[3].robiBoost = 6;
+        brackets[4].count = 9000;
+        brackets[4].robiBoost = 8;
+        brackets[5].count = 12000;
+        brackets[5].robiBoost = 7;
+    }
+
+    /**
+     * @notice Checks if the msg.sender is a contract or a proxy
+     */
+    modifier notContract() {
+        require(!_isContract(msg.sender), "contract not allowed");
+        require(msg.sender == tx.origin, "proxy contract not allowed");
+        _;
+    }
+
+    /**
+     * @notice Generate random between min and max brackets value. Then find RB value
+     */
+    function getRandomResultRb() private returns(uint) {
+        Brackets[6] memory _brackets = brackets;
+        Launchpad memory _launch = launches[0];
+        uint min = 1;
+        uint max = _launch.totalCount - _launch.soldCount;
+        uint diff = (max - min) + 1;
+        uint random = uint(keccak256(abi.encodePacked(blockhash(block.number - 1)))) % diff + min;
+        uint rb = 0;
+        uint count = 0;
+        for(uint i = 0; i < _brackets.length; i++){
+            count += _brackets[i].count;
+            if(random <= count){
+                brackets[i].count -= 1;
+                rb = _brackets[i].robiBoost;
+                break;
+            }
+        }
+        require(rb > 0, "Wrong rb amount");
+        return(rb);
     }
 
     /**
@@ -152,19 +164,20 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
      * @dev Callable by user
      * @param _launchIndex: Index of launch
      */
-    function buyNFT(uint _launchIndex)public nonReentrant whenNotPaused {
+    function buyNFT(uint _launchIndex) public nonReentrant whenNotPaused notContract {
         require(_launchIndex < launches.length, "Wrong launchpad number");
 
         Launchpad storage _launch = launches[_launchIndex];
-        require(checkLimits(msg.sender, _launchIndex), "limit exceeding");
+        require(checkLimits(tx.origin, _launchIndex), "limit exceeding");
         boughtCount[msg.sender][_launchIndex] += 1;
+
+        uint rb = getRandomResultRb();
         _launch.soldCount += 1;
 
         dealToken.safeTransferFrom(msg.sender, treasuryAddress, _launch.price);
+        biswapNFT.launchpadMint(msg.sender, _launch.level, rb);
 
-        biswapNFT.launchpadMint(msg.sender, _launch.level, _launch.robiBoost);
-
-        emit LaunchpadExecuted(msg.sender, _launchIndex, _launch.robiBoost);
+        emit LaunchpadExecuted(msg.sender, _launchIndex, rb);
     }
 
     /*
@@ -190,5 +203,17 @@ contract LaunchpadNftForBSW is ReentrancyGuard, Ownable, Pausable {
         Launchpad memory launch = launches[launchIndex];
         return boughtCount[user][launchIndex] < launch.maxToUser &&
         launch.soldCount < launch.totalCount;
+    }
+
+    /**
+     * @notice Checks if address is a contract
+     * @dev It prevents contract from being targetted
+     */
+    function _isContract(address addr) internal view returns (bool) {
+        uint256 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return size > 0;
     }
 }

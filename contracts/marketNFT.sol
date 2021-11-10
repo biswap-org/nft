@@ -50,19 +50,18 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
     uint256 constant MAX_DEFAULT_FEE = 1000; // max fee 10% (base 10000)
     uint256 public defaultFee = 100; //in base 10000 1%
-    uint8 public maxUserTokenOnSellToReward;
+    uint8 public maxUserTokenOnSellToReward = 3; //max count sell offers of nftForAccrualRB on which Rb accrual
     uint256 rewardDistributionSeller = 50; //Distribution reward between seller and buyer. Base 100
     address public treasuryAddress;
     address public immutable WBNBAddress;
     ISwapFeeRewardWithRB feeRewardRB;
     ISmartChefMarket smartChefMarket;
-    bool feeRewardRBIsEnabled; // Enable/disable accrue RB reward for placement NFT tokens from nftForAccrualRB list
+    bool feeRewardRBIsEnabled; // Enable/disable accrue RB reward for trade NFT tokens from nftForAccrualRB list
     bool placementRewardEnabled; //Enable rewards for place NFT tokens on market
 
     Offer[] public offers;
     mapping(IERC721 => mapping(uint256 => uint256)) public tokenSellOffers; // nft => tokenId => id
-    mapping(address => mapping(IERC721 => mapping(uint256 => uint256)))
-        public userBuyOffers; // user => nft => tokenId => id
+    mapping(address => mapping(IERC721 => mapping(uint256 => uint256))) public userBuyOffers; // user => nft => tokenId => id
     mapping(address => bool) public nftBlacklist; //add tokens on blackList
     mapping(address => bool) public nftForAccrualRB; //add tokens on which RobiBoost is accrual
     mapping(address => bool) public dealTokensWhitelist;
@@ -217,6 +216,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         onlyOwner
     {
         for (uint256 i = 0; i < _tokens.length; i++) {
+            require(_tokens[i] != address(0), "Address cant be 0");
             dealTokensWhitelist[_tokens[i]] = true;
             emit DealTokensWhiteListUpdate(_tokens[i], true);
         }
@@ -265,6 +265,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         public
         onlyOwner
     {
+        require(address(_smartChefMarket) != address(0), "Address cant be 0");
         smartChefMarket = _smartChefMarket;
     }
 
@@ -272,6 +273,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         public
         onlyOwner
     {
+        require(address(_feeRewardRB) != address(0), "Address cant be 0");
         feeRewardRB = _feeRewardRB;
     }
 
@@ -352,7 +354,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
             tokensCount[user]++;
         } else {
             tokensCount[user] = tokensCount[user] > 0
-                ? tokensCount[user] -= 1
+                ? tokensCount[user] - 1
                 : 0;
         }
         if (tokensCount[user] > maxUserTokenOnSellToReward) return;
@@ -412,17 +414,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         uint256 price,
         address dealToken
     ) internal {
-        if (msg.value > 0) {
-            price = msg.value;
-            dealToken = WBNBAddress;
-            IWETH(WBNBAddress).deposit{value: msg.value}();
-        } else {
-            IERC20(dealToken).safeTransferFrom(
-                msg.sender,
-                address(this),
-                price
-            );
-        }
+        IERC20(dealToken).safeTransferFrom(msg.sender, address(this), price);
         require(price > 0, "buyer should pay");
         offers.push(
             Offer({
@@ -479,20 +471,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         _offer.status = OfferStatus.Accepted;
         _offer.acceptUser = msg.sender;
         _unlinkSellOffer(_offer);
-        //If deal token is WBNB we can receive and convert BNB to WBNB
-        if (
-            address(_offer.dealToken) == WBNBAddress &&
-            msg.value >= _offer.price
-        ) {
-            _offer.price = msg.value;
-            IWETH(WBNBAddress).deposit{value: msg.value}();
-        } else {
-            _offer.dealToken.safeTransferFrom(
-                msg.sender,
-                address(this),
-                _offer.price
-            );
-        }
+
+        _offer.dealToken.safeTransferFrom(msg.sender, address(this), _offer.price);
         _distributePayment(_offer);
         _offer.nft.safeTransferFrom(_offer.user, msg.sender, _offer.tokenId);
         emit AcceptOffer(id, msg.sender, _offer.price);
@@ -558,14 +538,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         uint256 amount,
         IERC20 _dealToken
     ) internal {
-        if (amount > 0 && to != address(0)) {
-            if (address(_dealToken) == WBNBAddress) {
-                IWETH(WBNBAddress).withdraw(amount);
-                payable(to).transfer(amount);
-            } else {
-                _dealToken.safeTransfer(to, amount);
-            }
-        }
+        require(amount > 0 && to != address(0), "Wrong amount or dest on transfer");
+        _dealToken.safeTransfer(to, amount);
     }
 
     function _distributePayment(Offer memory _offer) internal {
