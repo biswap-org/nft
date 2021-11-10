@@ -8,13 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-interface IWETH {
-    function deposit() external payable;
-
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function withdraw(uint256) external;
-}
 
 interface ISwapFeeRewardWithRB {
     function accrueRBFromMarket(
@@ -53,7 +46,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     uint8 public maxUserTokenOnSellToReward = 3; //max count sell offers of nftForAccrualRB on which Rb accrual
     uint256 rewardDistributionSeller = 50; //Distribution reward between seller and buyer. Base 100
     address public treasuryAddress;
-    address public immutable WBNBAddress;
     ISwapFeeRewardWithRB feeRewardRB;
     ISmartChefMarket smartChefMarket;
     bool feeRewardRBIsEnabled; // Enable/disable accrue RB reward for trade NFT tokens from nftForAccrualRB list
@@ -106,18 +98,15 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
     constructor(
         address _treasuryAddress,
-        address _WBNBAddress, //0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c
         address _USDT,
         address _BSW,
         ISwapFeeRewardWithRB _feeRewardRB
     ) {
         //NFT-01
         require(_treasuryAddress != address(0), "Address cant be zero");
-        require(_WBNBAddress != address(0), "Address cant be zero");
         require(_USDT != address(0), "Address cant be zero");
         require(_BSW != address(0), "Address cant be zero");
         treasuryAddress = _treasuryAddress;
-        WBNBAddress = _WBNBAddress;
         feeRewardRB = _feeRewardRB;
         feeRewardRBIsEnabled = true;
         // take id(0) as placeholder
@@ -135,10 +124,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         );
         dealTokensWhitelist[_USDT] = true;
         dealTokensWhitelist[_BSW] = true;
-        dealTokensWhitelist[_WBNBAddress] = true;
     }
 
-    receive() external payable {}
 
     function pause() public onlyOwner {
         _pause();

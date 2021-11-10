@@ -2,30 +2,30 @@
 
 pragma solidity 0.8.4;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-interface IWETH {
-    function deposit() external payable;
-
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function withdraw(uint256) external;
-}
 
 interface ISwapFeeRewardWithRB {
-    function accrueRBFromAuction(address account, address fromToken, uint amount) external;
+    function accrueRBFromAuction(
+        address account,
+        address fromToken,
+        uint256 amount
+    ) external;
 }
-
 
 contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     using SafeERC20 for IERC20;
 
-    enum State {ST_OPEN, ST_FINISHED, ST_CANCELLED}
+    enum State {
+        ST_OPEN,
+        ST_FINISHED,
+        ST_CANCELLED
+    }
 
     struct TokenPair {
         IERC721 nft;
@@ -66,7 +66,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     event NFTAccrualListUpdate(address nft, bool state);
 
     bool internal _canReceive = false;
-    IWETH public immutable weth;
     Inventory[] public auctions;
     //    mapping(uint256 => mapping(uint256 => TokenPair)) public auctionNfts; delete
 
@@ -74,12 +73,11 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     mapping(address => bool) public nftForAccrualRB; //add tokens on which RobiBoost is accrual
     mapping(IERC20 => bool) public dealTokenWhitelist;
     mapping(IERC721 => mapping(uint256 => uint256)) public auctionNftIndex; // nft -> tokenId -> id
-    mapping(address => uint) public userFee; //User auction fee. if Zero - default fee
+    mapping(address => uint256) public userFee; //User auction fee. if Zero - default fee
 
-    uint constant MAX_DEFAULT_FEE = 1000; // max fee 10%
+    uint256 constant MAX_DEFAULT_FEE = 1000; // max fee 10%
     address public treasuryAddress;
-    uint public defaultFee = 100; //in base 10000 1%
-
+    uint256 public defaultFee = 100; //in base 10000 1%
 
     uint256 public extendEndTimestamp; // in seconds
     uint256 public minAuctionDuration; // in seconds
@@ -88,10 +86,9 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     uint256 public bidderIncentiveRate;
     uint256 public bidIncrRate;
     ISwapFeeRewardWithRB feeRewardRB;
-    bool feeRewardRBIsEnabled;
+    bool public feeRewardRBIsEnabled;
 
     constructor(
-        IWETH weth_,
         uint256 extendEndTimestamp_,
         uint256 minAuctionDuration_,
         uint256 rateBase_,
@@ -100,7 +97,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         address treasuryAddress_,
         ISwapFeeRewardWithRB feeRewardRB_
     ) {
-        weth = weth_;
         extendEndTimestamp = extendEndTimestamp_;
         minAuctionDuration = minAuctionDuration_;
         rateBase = rateBase_;
@@ -111,17 +107,17 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
         auctions.push(
             Inventory({
-        pair: TokenPair(IERC721(address(0)), 0),
-        seller: address(0),
-        bidder: address(0),
-        currency: IERC20(address(0)),
-        askPrice: 0,
-        bidPrice: 0,
-        netBidPrice: 0,
-        startBlock: 0,
-        endTimestamp: 0,
-        status: State.ST_CANCELLED
-        })
+                pair: TokenPair(IERC721(address(0)), 0),
+                seller: address(0),
+                bidder: address(0),
+                currency: IERC20(address(0)),
+                askPrice: 0,
+                bidPrice: 0,
+                netBidPrice: 0,
+                startBlock: 0,
+                endTimestamp: 0,
+                status: State.ST_CANCELLED
+            })
         );
     }
 
@@ -181,12 +177,15 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         emit NFTAccrualListUpdate(_nft, false);
     }
 
-    function setUserFee(address user, uint fee) public onlyOwner {
+    function setUserFee(address user, uint256 fee) public onlyOwner {
         userFee[user] = fee;
     }
 
-    function setDefaultFee(uint _newFee) public onlyOwner {
-        require(_newFee <= MAX_DEFAULT_FEE, "New fee must be less than or equal to max fee");
+    function setDefaultFee(uint256 _newFee) public onlyOwner {
+        require(
+            _newFee <= MAX_DEFAULT_FEE,
+            "New fee must be less than or equal to max fee"
+        );
         defaultFee = _newFee;
     }
 
@@ -200,8 +199,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     // public
 
-    receive() external payable {}
-
     function onERC721Received(
         address operator,
         address from,
@@ -209,19 +206,17 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         bytes calldata data
     ) external override whenNotPaused returns (bytes4) {
         if (data.length > 0) {
-            require(operator == from, 'caller should own the token');
-            require(!nftBlacklist[IERC721(msg.sender)], 'token not allowed');
-            (IERC20 currency, uint256 askPrice, uint256 endTimestamp) = abi.decode(
-                data,
-                (IERC20, uint256, uint256)
-            );
+            require(operator == from, "caller should own the token");
+            require(!nftBlacklist[IERC721(msg.sender)], "token not allowed");
+            (IERC20 currency, uint256 askPrice, uint256 endTimestamp) = abi
+                .decode(data, (IERC20, uint256, uint256));
             TokenPair memory pair = TokenPair({
-            nft: IERC721(msg.sender),
-            tokenId: tokenId
+                nft: IERC721(msg.sender),
+                tokenId: tokenId
             });
             _sell(from, pair, currency, askPrice, endTimestamp);
         } else {
-            require(_canReceive, 'cannot transfer directly');
+            require(_canReceive, "cannot transfer directly");
         }
 
         return this.onERC721Received.selector;
@@ -233,10 +228,13 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         uint256 askPrice,
         uint256 endTimestamp
     ) public nonReentrant whenNotPaused _waitForTransfer notContract {
-        require(address(pair.nft) != address(0), 'Address cant be zero');
+        require(address(pair.nft) != address(0), "Address cant be zero");
 
-        require(!nftBlacklist[pair.nft], 'token not allowed');
-        require(_isTokenOwnerAndApproved(pair.nft, pair.tokenId), 'token not approved');
+        require(!nftBlacklist[pair.nft], "token not allowed");
+        require(
+            _isTokenOwnerAndApproved(pair.nft, pair.tokenId),
+            "token not approved"
+        );
         pair.nft.safeTransferFrom(msg.sender, address(this), pair.tokenId);
 
         _sell(msg.sender, pair, currency, askPrice, endTimestamp);
@@ -249,27 +247,27 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         uint256 askPrice,
         uint256 endTimestamp
     ) internal _allowedDealToken(currency) {
-        require(askPrice > 0, 'askPrice > 0');
+        require(askPrice > 0, "askPrice > 0");
         require(
             endTimestamp >= block.timestamp + minAuctionDuration,
-            'auction duration not long enough'
+            "auction duration not long enough"
         );
 
         uint256 id = auctions.length;
 
         auctions.push(
             Inventory({
-        pair: pair,
-        seller: seller,
-        bidder: address(0),
-        currency: currency,
-        askPrice: askPrice,
-        bidPrice: 0,
-        netBidPrice: 0,
-        startBlock: block.number,
-        endTimestamp: endTimestamp,
-        status: State.ST_OPEN
-        })
+                pair: pair,
+                seller: seller,
+                bidder: address(0),
+                currency: currency,
+                askPrice: askPrice,
+                bidPrice: 0,
+                netBidPrice: 0,
+                startBlock: block.number,
+                endTimestamp: endTimestamp,
+                status: State.ST_OPEN
+            })
         );
 
         auctionNftIndex[pair.nft][pair.tokenId] = id;
@@ -277,31 +275,22 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     }
 
     function bid(uint256 id, uint256 offer)
-    public
-    payable
-    _hasAuction(id)
-    _isStOpen(id)
-    nonReentrant
-    whenNotPaused
-    notContract
+        public
+        payable
+        _hasAuction(id)
+        _isStOpen(id)
+        nonReentrant
+        whenNotPaused
+        notContract
     {
         Inventory storage inv = auctions[id];
-        require(block.timestamp < inv.endTimestamp, 'auction finished');
+        require(block.timestamp < inv.endTimestamp, "auction finished");
 
-        // set offer to native value
-        if (address(inv.currency) == address(weth)) {
-            offer = msg.value;
-        }
 
         // minimum increment
-        require(offer >= getMinBidPrice(id), 'not enough');
+        require(offer >= getMinBidPrice(id), "offer not enough");
 
-        // collect token
-        if (address(inv.currency) == address(weth)) {
-            weth.deposit{value: offer}(); // convert to weth for later use
-        } else {
-            inv.currency.safeTransferFrom(msg.sender, address(this), offer);
-        }
+        inv.currency.safeTransferFrom(msg.sender, address(this), offer);
 
         // transfer some to previous bidder
         uint256 incentive = 0;
@@ -321,16 +310,16 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     }
 
     function cancel(uint256 id)
-    public
-    _hasAuction(id)
-    _isStOpen(id)
-    _isSeller(id)
-    nonReentrant
-    whenNotPaused
-    notContract
+        public
+        _hasAuction(id)
+        _isStOpen(id)
+        _isSeller(id)
+        nonReentrant
+        whenNotPaused
+        notContract
     {
         Inventory storage inv = auctions[id];
-        require(inv.bidder == address(0), 'has bidder');
+        require(inv.bidder == address(0), "has bidder");
         _cancel(id);
     }
 
@@ -350,9 +339,13 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         }
     }
 
-    function _collectOrCancel(uint256 id) internal _hasAuction(id) _isStOpen(id) {
+    function _collectOrCancel(uint256 id)
+        internal
+        _hasAuction(id)
+        _isStOpen(id)
+    {
         Inventory storage inv = auctions[id];
-        require(block.timestamp >= inv.endTimestamp, 'auction not done yet');
+        require(block.timestamp >= inv.endTimestamp, "auction not done yet");
         if (inv.bidder == address(0)) {
             _cancel(id);
         } else {
@@ -364,13 +357,25 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         Inventory storage inv = auctions[id];
 
         // take fee
-        uint256 feeRate = userFee[inv.seller] == 0 ? defaultFee : userFee[inv.seller];
+        uint256 feeRate = userFee[inv.seller] == 0
+            ? defaultFee
+            : userFee[inv.seller];
         uint256 fee = (inv.netBidPrice * feeRate) / 10000;
         if (fee > 0) {
             _transfer(inv.currency, treasuryAddress, fee);
-            if(feeRewardRBIsEnabled && nftForAccrualRB[address(inv.pair.nft)]){
-                feeRewardRB.accrueRBFromAuction(inv.bidder, address(inv.currency), fee / 2);
-                feeRewardRB.accrueRBFromAuction(inv.seller, address(inv.currency), fee / 2);
+            if (
+                feeRewardRBIsEnabled && nftForAccrualRB[address(inv.pair.nft)]
+            ) {
+                feeRewardRB.accrueRBFromAuction(
+                    inv.bidder,
+                    address(inv.currency),
+                    fee / 2
+                );
+                feeRewardRB.accrueRBFromAuction(
+                    inv.seller,
+                    address(inv.currency),
+                    fee / 2
+                );
             }
         }
 
@@ -384,15 +389,27 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     function isOpen(uint256 id) public view _hasAuction(id) returns (bool) {
         Inventory storage inv = auctions[id];
-        return inv.status == State.ST_OPEN && block.timestamp < inv.endTimestamp;
+        return
+            inv.status == State.ST_OPEN && block.timestamp < inv.endTimestamp;
     }
 
-    function isCollectible(uint256 id) public view _hasAuction(id) returns (bool) {
+    function isCollectible(uint256 id)
+        public
+        view
+        _hasAuction(id)
+        returns (bool)
+    {
         Inventory storage inv = auctions[id];
-        return inv.status == State.ST_OPEN && block.timestamp >= inv.endTimestamp;
+        return
+            inv.status == State.ST_OPEN && block.timestamp >= inv.endTimestamp;
     }
 
-    function isCancellable(uint256 id) public view _hasAuction(id) returns (bool) {
+    function isCancellable(uint256 id)
+        public
+        view
+        _hasAuction(id)
+        returns (bool)
+    {
         Inventory storage inv = auctions[id];
         return inv.status == State.ST_OPEN && inv.bidder == address(0);
     }
@@ -415,22 +432,25 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     // internal
 
     modifier _isStOpen(uint256 id) {
-        require(auctions[id].status == State.ST_OPEN, 'auction finished or cancelled');
+        require(
+            auctions[id].status == State.ST_OPEN,
+            "auction finished or cancelled"
+        );
         _;
     }
 
     modifier _hasAuction(uint256 id) {
-        require(id > 0 && id < auctions.length, 'auction does not exist');
+        require(id > 0 && id < auctions.length, "auction does not exist");
         _;
     }
 
     modifier _isSeller(uint256 id) {
-        require(auctions[id].seller == msg.sender, 'caller is not seller');
+        require(auctions[id].seller == msg.sender, "caller is not seller");
         _;
     }
 
     modifier _allowedDealToken(IERC20 token) {
-        require(dealTokenWhitelist[token], 'currency not allowed');
+        require(dealTokenWhitelist[token], "currency not allowed");
         _;
     }
 
@@ -451,21 +471,19 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         address to,
         uint256 amount
     ) internal {
-        if (amount > 0 && to != address(0)) {
-            if (address(currency) == address(weth)) {
-                weth.withdraw(amount);
-                payable(to).transfer(amount);
-            } else {
-                currency.safeTransfer(to, amount);
-            }
-        }
+        require(amount > 0 && to != address(0), "Wrong amount or dest address");
+        currency.safeTransfer(to, amount);
     }
 
-    function _isTokenOwnerAndApproved(IERC721 token, uint256 tokenId) internal view returns (bool) {
+    function _isTokenOwnerAndApproved(IERC721 token, uint256 tokenId)
+        internal
+        view
+        returns (bool)
+    {
         return
-        (token.ownerOf(tokenId) == msg.sender) &&
-        (token.getApproved(tokenId) == address(this) ||
-        token.isApprovedForAll(msg.sender, address(this)));
+            (token.ownerOf(tokenId) == msg.sender) &&
+            (token.getApproved(tokenId) == address(this) ||
+                token.isApprovedForAll(msg.sender, address(this)));
     }
 
     function _transferInventoryTo(uint256 id, address to) internal {
