@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-
 interface ISwapFeeRewardWithRB {
     function accrueRBFromAuction(
         address account,
@@ -71,7 +70,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     mapping(IERC721 => bool) public nftBlacklist;
     mapping(address => bool) public nftForAccrualRB; //add tokens on which RobiBoost is accrual
-    mapping(IERC20 => bool) public dealTokenWhitelist;
+    mapping(IERC20 => bool) public dealTokensWhitelist;
     mapping(IERC721 => mapping(uint256 => uint256)) public auctionNftIndex; // nft -> tokenId -> id
     mapping(address => uint256) public userFee; //User auction fee. if Zero - default fee
 
@@ -86,7 +85,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     uint256 public bidderIncentiveRate;
     uint256 public bidIncrRate;
     ISwapFeeRewardWithRB feeRewardRB;
-    bool public feeRewardRBIsEnabled;
+    bool public feeRewardRBIsEnabled = false;
 
     constructor(
         uint256 extendEndTimestamp_,
@@ -147,12 +146,23 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         _unpause();
     }
 
-    function addWhiteListDealToken(IERC20 cur) public onlyOwner {
-        dealTokenWhitelist[cur] = true;
+    function addWhiteListDealTokens(IERC20[] calldata _tokens)
+        public
+        onlyOwner
+    {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            require(address(_tokens[i]) != address(0), "Address cant be 0");
+            dealTokensWhitelist[_tokens[i]] = true;
+        }
     }
 
-    function unWhitelistDealToken(IERC20 cur) public onlyOwner {
-        delete dealTokenWhitelist[cur];
+    function delWhiteListDealTokens(IERC20[] calldata _tokens)
+        public
+        onlyOwner
+    {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            delete dealTokensWhitelist[_tokens[i]];
+        }
     }
 
     function blacklistNFT(IERC721 nft) public onlyOwner {
@@ -285,7 +295,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     {
         Inventory storage inv = auctions[id];
         require(block.timestamp < inv.endTimestamp, "auction finished");
-
 
         // minimum increment
         require(offer >= getMinBidPrice(id), "offer not enough");
@@ -450,7 +459,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     }
 
     modifier _allowedDealToken(IERC20 token) {
-        require(dealTokenWhitelist[token], "currency not allowed");
+        require(dealTokensWhitelist[token], "currency not allowed");
         _;
     }
 

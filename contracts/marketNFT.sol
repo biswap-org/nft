@@ -48,8 +48,8 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
     address public treasuryAddress;
     ISwapFeeRewardWithRB feeRewardRB;
     ISmartChefMarket smartChefMarket;
-    bool feeRewardRBIsEnabled; // Enable/disable accrue RB reward for trade NFT tokens from nftForAccrualRB list
-    bool placementRewardEnabled; //Enable rewards for place NFT tokens on market
+    bool feeRewardRBIsEnabled = false; // Enable/disable accrue RB reward for trade NFT tokens from nftForAccrualRB list
+    bool placementRewardEnabled = false; //Enable rewards for place NFT tokens on market
 
     Offer[] public offers;
     mapping(IERC721 => mapping(uint256 => uint256)) public tokenSellOffers; // nft => tokenId => id
@@ -98,17 +98,13 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
     constructor(
         address _treasuryAddress,
-        address _USDT,
-        address _BSW,
         ISwapFeeRewardWithRB _feeRewardRB
     ) {
         //NFT-01
         require(_treasuryAddress != address(0), "Address cant be zero");
-        require(_USDT != address(0), "Address cant be zero");
-        require(_BSW != address(0), "Address cant be zero");
         treasuryAddress = _treasuryAddress;
         feeRewardRB = _feeRewardRB;
-        feeRewardRBIsEnabled = true;
+        feeRewardRBIsEnabled = false;
         // take id(0) as placeholder
         offers.push(
             Offer({
@@ -122,8 +118,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
                 side: Side.Buy
             })
         );
-        dealTokensWhitelist[_USDT] = true;
-        dealTokensWhitelist[_BSW] = true;
     }
 
 
