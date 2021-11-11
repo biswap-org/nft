@@ -5,8 +5,8 @@ const hre = require("hardhat");
 //BSW, WBNB, BUSD, USDT
 const swapFeeRewardAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
 
-const marketAddress = ``;
-const auctionAddress = ``;
+const marketAddress = `0x2b6bF07219769AFb56BeAa3b88fea5C128eAFb79`;
+const auctionAddress = `0x349Ea9e8b8f039A944aa120341E8F9eDfED93785`;
 
 //Auction deploy parameters
 const extendEndTimestamp = 60;
@@ -40,7 +40,6 @@ async function main() {
         ]
     })
     console.log(res);
-
 }
 
 main()

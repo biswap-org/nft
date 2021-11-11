@@ -4,15 +4,12 @@ const { ethers, network } = require(`hardhat`);
 //BSW, WBNB, BUSD, USDT
 const swapFeeRewardAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
 const bswToken = `0x965f527d9159dce6288a2219db51fc6eef120dd1`;
-const usdtToken = `0x172522f44eaD163718D63e5e9181220D1c1d8638`;
+const usdtToken = `0x55d398326f99059ff775485246999027b3197955`;
 const wbnbToken = `0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c`;
 const busdToken = `0xe9e7cea3dedca5984780bafc599bd69add087d56`;
 
 //NFT tokens to whiteList
 const BRE = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
-
-const marketAddress = ``;
-const auctionAddress = ``;
 
 //Auction deploy parameters
 const extendEndTimestamp = 60;
@@ -39,11 +36,11 @@ async function main() {
     tx = await market.addWhiteListDealTokens([bswToken, usdtToken, wbnbToken, busdToken], {nonce: ++nonce, gasLimit: 3000000});
     await tx.wait();
 
-    console.log(`add marketplace to swapFeeReward`);
-    const FeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
-    const feeReward = await FeeReward.attach(swapFeeRewardAddress);
-    tx = await feeReward.setMarket(market.address, {nonce: ++nonce, gasLimit: 3000000});
-    await tx.wait();
+    // console.log(`add marketplace to swapFeeReward`);
+    // const FeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
+    // const feeReward = await FeeReward.attach(swapFeeRewardAddress);
+    // tx = await feeReward.setMarket(market.address, {nonce: ++nonce, gasLimit: 3000000});
+    // await tx.wait();
 
     console.log(`Add tokens to nftForAccrualRB on Market`);
     tx = await market.addNftForAccrualRB(BRE, {nonce: ++nonce, gasLimit: 3000000});
@@ -70,9 +67,9 @@ async function main() {
     tx = await auction.addWhiteListDealTokens([bswToken, usdtToken, wbnbToken, busdToken], {nonce: ++nonce, gasLimit: 3000000});
     await tx.wait();
 
-    console.log(`Add auction on swapFeeReward`);
-    tx = await feeReward.setAuction(market.address, {nonce: ++nonce, gasLimit: 3000000});
-    await tx.wait();
+    // console.log(`Add auction on swapFeeReward`);
+    // tx = await feeReward.setAuction(market.address, {nonce: ++nonce, gasLimit: 3000000});
+    // await tx.wait();
 
     console.log(`Add tokens to nftForAccrualRB on Auction`);
     tx = await auction.addNftForAccrualRB(BRE, {nonce: ++nonce, gasLimit: 3000000});
