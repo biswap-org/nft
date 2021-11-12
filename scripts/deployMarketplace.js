@@ -14,12 +14,12 @@ const royaltyBREAddress = `0xAc6A4D92Ce734BFBE9C79210713A0E9753319b2B`;
 const BRE = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
 
 //Auction deploy parameters
-const extendEndTimestamp = 6*60*60;
-const minAuctionDuration = 24*60*60;
+const extendEndTimestamp = 60;
+const minAuctionDuration = 60;
 const rateBase = 10000;
 const bidderIncentiveRate = 500;
 const bidIncrRate = 1000;
-const prolongationTime = 60*10;
+const prolongationTime = 60;
 
 const marketAddress = '0x23567C7299702018B133ad63cE28685788ff3f67';
 const auctionAddress = '0xe897Ca92f150C72b1F3A5C74acB980CDec9375c9';
@@ -46,18 +46,19 @@ async function main() {
     // tx = await market.addNftForAccrualRB(BRE, {nonce: ++nonce, gasLimit: 3000000});
     // await tx.wait();
 
-    console.log(`Set Royalty BRE Token`)
-    const Market = await ethers.getContractFactory(`Market`);
-    market = await Market.attach(marketAddress);
-    tx = await market.setRoyalty(BRE, royaltyBREAddress, 50, true, {nonce: nonce, gasLimit: 3000000});
-    await tx.wait();
-    tx = await market.setTreasuryAddress(treasuryAddress, {nonce: ++nonce, gasLimit: 3000000});
-    await tx.wait();
+    // console.log(`Set Royalty BRE Token`)
+    // const Market = await ethers.getContractFactory(`Market`);
+    // market = await Market.attach(marketAddress);
+    // tx = await market.setRoyalty(BRE, royaltyBREAddress, 50, true, {nonce: nonce, gasLimit: 3000000});
+    // await tx.wait();
+    // tx = await market.setTreasuryAddress(treasuryAddress, {nonce: ++nonce, gasLimit: 3000000});
+    // await tx.wait();
 
-    console.log(`Set auction treasury address`)
+    //Auction ---------------------------------------------------------------------------------------------------------
+
+    console.log(`Start deploy auction contract`);
     const Auction = await ethers.getContractFactory(`Auction`);
-    auction = await Auction.attach(auctionAddress);
-    tx = await auction.updateSettings(
+    auction = await Auction.deploy(
         extendEndTimestamp,
         prolongationTime,
         minAuctionDuration,
@@ -65,49 +66,33 @@ async function main() {
         bidderIncentiveRate,
         bidIncrRate,
         treasuryAddress,
-        swapFeeRewardAddress
+        swapFeeRewardAddress,
+        {nonce: nonce}
     );
+    await auction.deployTransaction.wait();
+    console.log(`Auction deploy on ${auction.address}`);
+
+    console.log(`Add tokens to Auction white list`);
+    tx = await auction.addWhiteListDealTokens([bswToken, usdtToken, wbnbToken, busdToken], {nonce: ++nonce, gasLimit: 3000000});
     await tx.wait();
-    console.log(`Done`)
 
+    console.log(`Add tokens to nftForAccrualRB on Auction`);
+    tx = await auction.addNftForAccrualRB(BRE, {nonce: ++nonce, gasLimit: 3000000});
+    await tx.wait();
 
-    //Auction ---------------------------------------------------------------------------------------------------------
+    console.log(`add marketplace to swapFeeReward`);
+    const FeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
+    const feeReward = await FeeReward.attach(swapFeeRewardAddress);
+    tx = await feeReward.setMarket(market.address, {nonce: ++nonce, gasLimit: 3000000});
+    await tx.wait();
 
-    // console.log(`Start deploy auction contract`);
-    // const Auction = await ethers.getContractFactory(`Auction`);
-    // auction = await Auction.deploy(
-    //     extendEndTimestamp,
-    //     prolongationTime,
-    //     minAuctionDuration,
-    //     rateBase,
-    //     bidderIncentiveRate,
-    //     bidIncrRate,
-    //     treasuryAddress,
-    //     swapFeeRewardAddress,
-    //     {nonce: ++nonce}
-    // );
-    // await auction.deployTransaction.wait();
-    // console.log(`Auction deploy on ${auction.address}`);
-    //
-    // console.log(`Add tokens to Auction white list`);
-    // tx = await auction.addWhiteListDealTokens([bswToken, usdtToken, wbnbToken, busdToken], {nonce: ++nonce, gasLimit: 3000000});
-    // await tx.wait();
-    //
-    // console.log(`Add tokens to nftForAccrualRB on Auction`);
-    // tx = await auction.addNftForAccrualRB(BRE, {nonce: ++nonce, gasLimit: 3000000});
-    // await tx.wait();
-    //
-    // console.log(`add marketplace to swapFeeReward`);
-    // const FeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
-    // const feeReward = await FeeReward.attach(swapFeeRewardAddress);
-    // tx = await feeReward.setMarket(market.address, {nonce: ++nonce, gasLimit: 3000000});
-    // await tx.wait();
-    //
-    // console.log(`Add auction on swapFeeReward`);
-    // tx = await feeReward.setAuction(market.address, {nonce: ++nonce, gasLimit: 3000000});
-    // await tx.wait();
+    console.log(`Add auction on swapFeeReward`);
+    tx = await feeReward.setAuction(market.address, {nonce: ++nonce, gasLimit: 3000000});
+    await tx.wait();
 
-
+    console.log(`Add royalty RBE token`)
+    tx = await auction.setRoyalty(BRE, royaltyBREAddress, 50, true, {nonce: ++nonce, gasLimit: 3000000})
+    await tx.wait();
 }
 
 main()

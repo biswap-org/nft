@@ -44,6 +44,12 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         State status;
     }
 
+    struct RoyaltyStr {
+        uint32 rate;
+        address receiver;
+        bool enable;
+    }
+
     event NFTBlacklisted(IERC721 nft, bool whitelisted);
     event NewAuction(
         uint256 indexed id,
@@ -63,6 +69,12 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     event AuctionCancelled(uint256 indexed id);
     event AuctionFinished(uint256 indexed id, address indexed winner);
     event NFTAccrualListUpdate(address nft, bool state);
+    event SetRoyalty(
+        address nftAddress,
+        address royaltyReceiver,
+        uint32 rate,
+        bool enable
+    );
 
     bool internal _canReceive = false;
     Inventory[] public auctions;
@@ -73,6 +85,8 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     mapping(IERC20 => bool) public dealTokensWhitelist;
     mapping(IERC721 => mapping(uint256 => uint256)) public auctionNftIndex; // nft -> tokenId -> id
     mapping(address => uint256) public userFee; //User auction fee. if Zero - default fee
+    mapping(address => RoyaltyStr) public royalty; //Royalty for NFT creator. NFTToken => royalty (base 10000)
+
 
     uint256 constant MAX_DEFAULT_FEE = 1000; // max fee 10%
     address public treasuryAddress;
@@ -87,7 +101,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
     uint256 public bidderIncentiveRate;
     uint256 public bidIncrRate;
     ISwapFeeRewardWithRB feeRewardRB;
-    bool public feeRewardRBIsEnabled = false;
+    bool public feeRewardRBIsEnabled = true;
 
     constructor(
         uint256 extendEndTimestamp_,
@@ -211,6 +225,21 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     function disableRBFeeReward() public onlyOwner {
         feeRewardRBIsEnabled = false;
+    }
+
+    function setRoyalty(
+        address nftAddress,
+        address royaltyReceiver,
+        uint32 rate,
+        bool enable
+    ) public onlyOwner {
+        require(nftAddress != address(0), "Address cant be zero");
+        require(royaltyReceiver != address(0), "Address cant be zero");
+        require(rate < 10000, "Rate must be less than 10000");
+        royalty[nftAddress].receiver = royaltyReceiver;
+        royalty[nftAddress].rate = rate;
+        royalty[nftAddress].enable = enable;
+        emit SetRoyalty(nftAddress, royaltyReceiver, rate, enable);
     }
 
     // public
@@ -375,6 +404,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
             ? defaultFee
             : userFee[inv.seller];
         uint256 fee = (inv.netBidPrice * feeRate) / 10000;
+
         if (fee > 0) {
             _transfer(inv.currency, treasuryAddress, fee);
             if (
@@ -392,9 +422,14 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
                 );
             }
         }
+        uint256 royaltyFee = 0;
+        if(royalty[address(inv.pair.nft)].enable){
+            royaltyFee = (inv.netBidPrice * royalty[address(inv.pair.nft)].rate) / 10000;
+            _transfer(inv.currency, royalty[address(inv.pair.nft)].receiver, royaltyFee);
+        }
 
         // transfer profit and token
-        _transfer(inv.currency, inv.seller, inv.netBidPrice - fee);
+        _transfer(inv.currency, inv.seller, inv.netBidPrice - fee - royaltyFee);
         inv.status = State.ST_FINISHED;
         _transferInventoryTo(id, inv.bidder);
 
