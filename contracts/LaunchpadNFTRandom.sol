@@ -36,7 +36,7 @@ contract LaunchpadNftRandom is ReentrancyGuard, Ownable, Pausable {
 
     struct Brackets {
         uint32 count;
-        uint16 robiBoost;
+        uint128 robiBoost;
     }
 
     Launchpad[] public launches;
