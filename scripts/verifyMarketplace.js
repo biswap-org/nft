@@ -5,16 +5,18 @@ const hre = require("hardhat");
 //BSW, WBNB, BUSD, USDT
 const swapFeeRewardAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
 
-const marketAddress = `0x2b6bF07219769AFb56BeAa3b88fea5C128eAFb79`;
-const auctionAddress = `0x349Ea9e8b8f039A944aa120341E8F9eDfED93785`;
+const marketAddress = '';
+const auctionAddress = ``;
+
+const treasuryAddress = `0x6332Da1565F0135E7b7Daa41C419106Af93274BA`;
 
 //Auction deploy parameters
 const extendEndTimestamp = 60;
 const minAuctionDuration = 60;
 const rateBase = 10000;
-const bidderIncentiveRate = 1000;
+const bidderIncentiveRate = 500;
 const bidIncrRate = 1000;
-
+const prolongationTime = 60*10;
 
 async function main() {
     let accounts = await ethers.getSigners();
@@ -22,7 +24,7 @@ async function main() {
     console.log(`Verify market contract`);
     let res = await hre.run("verify:verify", {
         address: marketAddress,
-        constructorArguments: [accounts[0].address, swapFeeRewardAddress]
+        constructorArguments: [treasuryAddress, swapFeeRewardAddress]
     })
     console.log(res);
 
@@ -30,13 +32,14 @@ async function main() {
     res = await hre.run("verify:verify", {
         address: auctionAddress,
         constructorArguments: [
-            extendEndTimestamp,
-            minAuctionDuration,
-            rateBase,
-            bidderIncentiveRate,
-            bidIncrRate,
-            accounts[0].address,
-            swapFeeRewardAddress
+        extendEndTimestamp,
+        prolongationTime,
+        minAuctionDuration,
+        rateBase,
+        bidderIncentiveRate,
+        bidIncrRate,
+        treasuryAddress,
+        swapFeeRewardAddress,
         ]
     })
     console.log(res);

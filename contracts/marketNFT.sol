@@ -268,7 +268,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         uint256 price
     )
         public
-        payable
         nonReentrant
         whenNotPaused
         _nftAllowed(nft)
@@ -286,7 +285,6 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
 
     function accept(uint256 id)
         public
-        payable
         nonReentrant
         _offerExists(id)
         _offerOpen(id)
@@ -542,7 +540,7 @@ contract Market is ReentrancyGuard, Ownable, Pausable {
         }
         _transfer(treasuryAddress, fee, _offer.dealToken);
         _transfer(seller, _offer.price - fee - royaltyFee, _offer.dealToken);
-        if (feeRewardRBIsEnabled) {
+        if (feeRewardRBIsEnabled && nftForAccrualRB[address(_offer.nft)]) {
             feeRewardRB.accrueRBFromMarket(
                 seller,
                 address(_offer.dealToken),

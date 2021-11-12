@@ -80,6 +80,8 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     uint256 public extendEndTimestamp; // in seconds
     uint256 public minAuctionDuration; // in seconds
+    uint256 public prolongationTime; // in seconds
+
 
     uint256 public rateBase;
     uint256 public bidderIncentiveRate;
@@ -89,6 +91,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     constructor(
         uint256 extendEndTimestamp_,
+        uint256 prolongationTime_,
         uint256 minAuctionDuration_,
         uint256 rateBase_,
         uint256 bidderIncentiveRate_,
@@ -97,6 +100,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         ISwapFeeRewardWithRB feeRewardRB_
     ) {
         extendEndTimestamp = extendEndTimestamp_;
+        prolongationTime = prolongationTime_;
         minAuctionDuration = minAuctionDuration_;
         rateBase = rateBase_;
         bidderIncentiveRate = bidderIncentiveRate_;
@@ -122,6 +126,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     function updateSettings(
         uint256 extendEndTimestamp_,
+        uint256 prolongationTime_,
         uint256 minAuctionDuration_,
         uint256 rateBase_,
         uint256 bidderIncentiveRate_,
@@ -129,6 +134,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         address treasuryAddress_,
         ISwapFeeRewardWithRB _feeRewardRB
     ) public onlyOwner {
+        prolongationTime = prolongationTime_;
         extendEndTimestamp = extendEndTimestamp_;
         minAuctionDuration = minAuctionDuration_;
         rateBase = rateBase_;
@@ -286,7 +292,6 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
 
     function bid(uint256 id, uint256 offer)
         public
-        payable
         _hasAuction(id)
         _isStOpen(id)
         nonReentrant
@@ -312,7 +317,7 @@ contract Auction is ReentrancyGuard, Ownable, Pausable, IERC721Receiver {
         inv.netBidPrice = offer - incentive;
         inv.bidder = msg.sender;
         if (block.timestamp + extendEndTimestamp >= inv.endTimestamp) {
-            inv.endTimestamp += extendEndTimestamp;
+            inv.endTimestamp += prolongationTime;
         }
 
         emit NewBid(id, msg.sender, offer, inv.netBidPrice, inv.endTimestamp);
