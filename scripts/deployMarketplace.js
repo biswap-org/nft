@@ -20,6 +20,8 @@ const bidderIncentiveRate = 500;
 const bidIncrRate = 1000;
 const prolongationTime = 60*10;
 
+const marketAddress = '0x23567C7299702018B133ad63cE28685788ff3f67';
+
 let market, auction, tx;
 async function main() {
     let accounts = await ethers.getSigners();
@@ -43,6 +45,8 @@ async function main() {
     // await tx.wait();
 
     console.log(`Set Royalty BRE Token`)
+    const Market = await ethers.getContractFactory(`Market`);
+    market = await Market.attach(marketAddress);
     tx = await market.setRoyalty(BRE, treasuryAddress, 50, true, {nonce: nonce, gasLimit: 3000000});
     await tx.wait();
 
