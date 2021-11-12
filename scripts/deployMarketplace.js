@@ -8,7 +8,8 @@ const usdtToken = `0x55d398326f99059ff775485246999027b3197955`;
 const wbnbToken = `0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c`;
 const busdToken = `0xe9e7cea3dedca5984780bafc599bd69add087d56`;
 
-const treasuryAddress = `0x6332Da1565F0135E7b7Daa41C419106Af93274BA`;
+const treasuryAddress = `0x863E9e0C64C18eF17DBb7a479499ea039c6b5AD3`;
+const royaltyBREAddress = `0xAc6A4D92Ce734BFBE9C79210713A0E9753319b2B`;
 //NFT tokens to whiteList
 const BRE = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
 
@@ -21,6 +22,7 @@ const bidIncrRate = 1000;
 const prolongationTime = 60*10;
 
 const marketAddress = '0x23567C7299702018B133ad63cE28685788ff3f67';
+const auctionAddress = '0xe897Ca92f150C72b1F3A5C74acB980CDec9375c9';
 
 let market, auction, tx;
 async function main() {
@@ -47,8 +49,27 @@ async function main() {
     console.log(`Set Royalty BRE Token`)
     const Market = await ethers.getContractFactory(`Market`);
     market = await Market.attach(marketAddress);
-    tx = await market.setRoyalty(BRE, treasuryAddress, 50, true, {nonce: nonce, gasLimit: 3000000});
+    tx = await market.setRoyalty(BRE, royaltyBREAddress, 50, true, {nonce: nonce, gasLimit: 3000000});
     await tx.wait();
+    tx = await market.setTreasuryAddress(treasuryAddress, {nonce: ++nonce, gasLimit: 3000000});
+    await tx.wait();
+
+    console.log(`Set auction treasury address`)
+    const Auction = await ethers.getContractFactory(`Auction`);
+    auction = await Auction.attach(auctionAddress);
+    tx = await auction.updateSettings(
+        extendEndTimestamp,
+        prolongationTime,
+        minAuctionDuration,
+        rateBase,
+        bidderIncentiveRate,
+        bidIncrRate,
+        treasuryAddress,
+        swapFeeRewardAddress
+    );
+    await tx.wait();
+    console.log(`Done`)
+
 
     //Auction ---------------------------------------------------------------------------------------------------------
 
