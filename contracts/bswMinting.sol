@@ -666,7 +666,6 @@ contract BSWMinting is Ownable {
         address _nftStakingAddr,
         uint256 _swapFeeRewardMintingPerBlock,
         uint256 _nftStakingMintingPerBlock,
-        uint256 _startBlock,
         uint256 _maxMint
     ) public {
         BSW = _BSW;
@@ -674,7 +673,7 @@ contract BSWMinting is Ownable {
         nftStakingAddr = _nftStakingAddr;
         swapFeeRewardMintingPerBlock = _swapFeeRewardMintingPerBlock;
         nftStakingMintingPerBlock = _nftStakingMintingPerBlock;
-        lastBlockWithdraw = _startBlock;
+        lastBlockWithdraw = block.number;
         maxMint = _maxMint;
     }
 
