@@ -252,8 +252,11 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
 
     // Withdraw reward token. EMERGENCY ONLY.
     function emergencyRewardTokenWithdraw(address _token, uint256 _amount) external onlyOwner {
-        require(address(stakeToken) != _token, "Cant withdraw stake token");
+//        require(address(stakeToken) != _token, "Cant withdraw stake token");
         require(IERC20(_token).balanceOf(address(this)) >= _amount, "Not enough balance");
+        if(address(stakeToken) == _token){
+            _amount = stakeToken.balanceOf(address(this)) - totalStakedSupply;
+        }
         IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 }
