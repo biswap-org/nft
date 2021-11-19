@@ -246,6 +246,7 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
         for(uint i = 0; i < listRewardTokens.length; i++){
             delete rewardDebt[msg.sender][listRewardTokens[i]];
         }
+        stakeToken.safeTransfer(msg.sender, _stakedAmount);
         emit EmergencyWithdraw(msg.sender, _stakedAmount);
     }
 
