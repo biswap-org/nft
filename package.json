@@ -11,5 +11,20 @@
     "hardhat": "^2.6.1",
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.13"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.sol",
+        "options": {
+          "printWidth": 120,
+          "tabWidth": 4,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false,
+          "explicitTypes": "preserve"
+        }
+      }
+    ]
   }
 }

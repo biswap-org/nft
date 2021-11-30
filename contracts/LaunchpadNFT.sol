@@ -1,24 +1,32 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @notice Biswap NFT interface
  */
 interface IBiswapNFT {
-    function launchpadMint(address to, uint level, uint robiBoost) external;
+    function launchpadMint(
+        address to,
+        uint256 level,
+        uint256 robiBoost
+    ) external;
 }
 
 /**
  * @notice Oracle interface
  */
 interface IOracle {
-    function consult(address tokenIn, uint amountIn, address tokenOut) external view returns (uint amountOut);
+    function consult(
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut
+    ) external view returns (uint256 amountOut);
 }
 
 /**
@@ -46,8 +54,8 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
     IWBNB public immutable wbnb;
 
     struct Launchpad {
-        uint priceInUSD;
-        uint robiBoost;
+        uint256 priceInUSD;
+        uint256 robiBoost;
         uint32 totalCount;
         uint32 soldCount;
         uint32 level;
@@ -55,10 +63,15 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
     }
     Launchpad[] public launches;
     mapping(address => bool) public whitelistDealToken; //deal token white list
-    mapping(address => mapping(uint => uint)) public boughtCount; //Bought NFT`s by user: address => launches => tickets count
+    mapping(address => mapping(uint256 => uint256)) public boughtCount; //Bought NFT`s by user: address => launches => tickets count
 
     event ConfigWhitelistDealToken(address indexed token, bool enabled);
-    event LaunchpadExecuted(address indexed user, address indexed dealToken, uint launchIndex, uint robiboost);
+    event LaunchpadExecuted(
+        address indexed user,
+        address indexed dealToken,
+        uint256 launchIndex,
+        uint256 robiboost
+    );
 
     /**
      * @notice Constructor
@@ -68,7 +81,12 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _wbnb: wrapped BNB contract
      * @param _usdt: USDT ERC20 contract
      */
-    constructor(IBiswapNFT _biswapNFT, IOracle _oracle, IWBNB _wbnb, address _usdt) {
+    constructor(
+        IBiswapNFT _biswapNFT,
+        IOracle _oracle,
+        IWBNB _wbnb,
+        address _usdt
+    ) {
         biswapNFT = _biswapNFT;
         oracle = _oracle;
         wbnb = _wbnb;
@@ -76,53 +94,53 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = payable(msg.sender);
         launches.push(
             Launchpad({
-        totalCount: 2500,
-        soldCount: 0,
-        priceInUSD: 10 ether,
-        level: 1,
-        robiBoost: 1e18,
-        maxToUser: 6
-        })
+                totalCount: 2500,
+                soldCount: 0,
+                priceInUSD: 10 ether,
+                level: 1,
+                robiBoost: 1e18,
+                maxToUser: 6
+            })
         );
         launches.push(
             Launchpad({
-        totalCount: 250,
-        soldCount: 0,
-        priceInUSD: 200 ether,
-        level: 2,
-        robiBoost: 66e18,
-        maxToUser: 1
-        })
+                totalCount: 250,
+                soldCount: 0,
+                priceInUSD: 200 ether,
+                level: 2,
+                robiBoost: 66e18,
+                maxToUser: 1
+            })
         );
         launches.push(
             Launchpad({
-        totalCount: 50,
-        soldCount: 0,
-        priceInUSD: 1000 ether,
-        level: 3,
-        robiBoost: 550e18,
-        maxToUser: 1
-        })
+                totalCount: 50,
+                soldCount: 0,
+                priceInUSD: 1000 ether,
+                level: 3,
+                robiBoost: 550e18,
+                maxToUser: 1
+            })
         );
         launches.push(
             Launchpad({
-        totalCount: 10,
-        soldCount: 0,
-        priceInUSD: 6000 ether,
-        level: 4,
-        robiBoost: 4400e18,
-        maxToUser: 1
-        })
+                totalCount: 10,
+                soldCount: 0,
+                priceInUSD: 6000 ether,
+                level: 4,
+                robiBoost: 4400e18,
+                maxToUser: 1
+            })
         );
         launches.push(
             Launchpad({
-        totalCount: 1,
-        soldCount: 0,
-        priceInUSD: 40000 ether,
-        level: 5,
-        robiBoost: 33000e18,
-        maxToUser: 1
-        })
+                totalCount: 1,
+                soldCount: 0,
+                priceInUSD: 40000 ether,
+                level: 5,
+                robiBoost: 33000e18,
+                maxToUser: 1
+            })
         );
     }
 
@@ -153,7 +171,10 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @dev Callable by contract owner
      * @param _treasuryAddress: Treasury address
      */
-    function setTreasuryAddress(address payable _treasuryAddress) public onlyOwner {
+    function setTreasuryAddress(address payable _treasuryAddress)
+        public
+        onlyOwner
+    {
         treasuryAddress = _treasuryAddress;
     }
 
@@ -165,20 +186,26 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _level: NFT token level
      * @param _robiBoost: NFT token Robi Boost
      * @param _maxToUser: max NFT tokens limit for sale to one user
-    */
-    function addNewLaunch(uint32 _totalCount, uint _priceInUSD, uint32 _level, uint _robiBoost, uint32 _maxToUser) public onlyOwner {
+     */
+    function addNewLaunch(
+        uint32 _totalCount,
+        uint256 _priceInUSD,
+        uint32 _level,
+        uint256 _robiBoost,
+        uint32 _maxToUser
+    ) public onlyOwner {
         require(_totalCount > 0, "count must be greater than zero");
         require(_maxToUser > 0, "");
         require(_level < 7, "Incorrect level");
         launches.push(
             Launchpad({
-        totalCount: _totalCount,
-        soldCount: 0,
-        priceInUSD: _priceInUSD,
-        level: _level,
-        robiBoost: _robiBoost,
-        maxToUser: _maxToUser
-        })
+                totalCount: _totalCount,
+                soldCount: 0,
+                priceInUSD: _priceInUSD,
+                level: _level,
+                robiBoost: _robiBoost,
+                maxToUser: _maxToUser
+            })
         );
     }
 
@@ -188,7 +215,7 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _index: Index of launch
      * @return number of tokens left to sell from launch
      */
-    function leftToSell(uint _index) public view returns(uint){
+    function leftToSell(uint256 _index) public view returns (uint256) {
         require(_index <= launches.length, "Wrong index");
         return launches[_index].totalCount - launches[_index].soldCount;
     }
@@ -198,9 +225,14 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _dealToken: deal token
      * @param _launchIndex: launch index
      */
-    function getPriceInToken(address _dealToken, uint _launchIndex) public view returns(uint){
+    function getPriceInToken(address _dealToken, uint256 _launchIndex)
+        public
+        view
+        returns (uint256)
+    {
         require(_launchIndex < launches.length, "Wrong index");
-        return oracle.consult(usdt, launches[_launchIndex].priceInUSD, _dealToken);
+        return
+            oracle.consult(usdt, launches[_launchIndex].priceInUSD, _dealToken);
     }
 
     /**
@@ -209,12 +241,12 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
      * @param _launchIndex: Index of launch
      * @param _dealToken: Purchase ERC20 token
      */
-    function buyNFT(uint _launchIndex, address _dealToken)
-    public
-    payable
-    nonReentrant
-    whenNotPaused
-    _dealTokenInWhitelist(_dealToken)
+    function buyNFT(uint256 _launchIndex, address _dealToken)
+        public
+        payable
+        nonReentrant
+        whenNotPaused
+        _dealTokenInWhitelist(_dealToken)
     {
         require(_launchIndex < launches.length, "Wrong launchpad number");
 
@@ -222,20 +254,29 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
         require(checkLimits(msg.sender, _launchIndex), "limit exceeding");
         boughtCount[msg.sender][_launchIndex] += 1;
         _launch.soldCount += 1;
-        uint price = _dealToken == usdt ?
-        _launch.priceInUSD :
-        oracle.consult(usdt, _launch.priceInUSD, _dealToken);
+        uint256 price = _dealToken == usdt
+            ? _launch.priceInUSD
+            : oracle.consult(usdt, _launch.priceInUSD, _dealToken);
 
         require(price > 0, "Wrong price given");
 
-        if(_dealToken == address(wbnb) && msg.value >= price){
-            (bool success, ) = treasuryAddress.call{value:msg.value}("");
+        if (_dealToken == address(wbnb) && msg.value >= price) {
+            (bool success, ) = treasuryAddress.call{value: msg.value}("");
             require(success, "Can`t transfer funds");
         } else {
-            IERC20(_dealToken).safeTransferFrom(msg.sender, treasuryAddress, price);
+            IERC20(_dealToken).safeTransferFrom(
+                msg.sender,
+                treasuryAddress,
+                price
+            );
         }
         biswapNFT.launchpadMint(msg.sender, _launch.level, _launch.robiBoost);
-        emit LaunchpadExecuted(msg.sender, _dealToken, _launchIndex, _launch.robiBoost);
+        emit LaunchpadExecuted(
+            msg.sender,
+            _dealToken,
+            _launchIndex,
+            _launch.robiBoost
+        );
     }
 
     /*
@@ -253,19 +294,24 @@ contract LaunchpadNFT is ReentrancyGuard, Ownable, Pausable {
     function unpause() public onlyOwner {
         _unpause();
     }
+
     /* @notice Check limits left by user by launch
      * @param user: user address
      * @param launchIndex: index of launchpad
      */
-    function checkLimits(address user, uint launchIndex) internal view returns(bool){
+    function checkLimits(address user, uint256 launchIndex)
+        internal
+        view
+        returns (bool)
+    {
         Launchpad memory launch = launches[launchIndex];
-        return boughtCount[user][launchIndex] < launch.maxToUser &&
-        launch.soldCount < launch.totalCount;
+        return
+            boughtCount[user][launchIndex] < launch.maxToUser &&
+            launch.soldCount < launch.totalCount;
     }
 
     modifier _dealTokenInWhitelist(address _dealToken) {
         require(whitelistDealToken[_dealToken], "Token not allowed");
         _;
     }
-
 }
