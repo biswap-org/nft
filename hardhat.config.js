@@ -34,7 +34,7 @@ module.exports = {
       accounts: {mnemonic: mnemonic}
     },
     mainnetBSC: {
-      url: "https://bsc-dataseed.binance.org/",
+      url: "https://speedy-nodes-nyc.moralis.io/3ad31c74f70f3d5894c50440/bsc/mainnet",
       chainId: 56,
       gasPrice: 20000000000,
       accounts: [privatKey]
