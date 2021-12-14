@@ -58,13 +58,13 @@ contract LaunchpadNftRandomNY is ReentrancyGuard, Ownable, Pausable {
         treasuryAddress = _treasuryAddress;
         launches.push(
             Launchpad({
-        totalCount : 30000,
-        soldCount : 0,
-        price : 50 ether,
-        level : 1,
-        robiBoost : 0,
-        maxToUser : 30000
-        })
+                totalCount : 30000,
+                soldCount : 0,
+                price : 50 ether,
+                level : 1,
+                robiBoost : 0,
+                maxToUser : 1
+            })
         );
 
         brackets[0].count = 1500;
@@ -147,13 +147,13 @@ contract LaunchpadNftRandomNY is ReentrancyGuard, Ownable, Pausable {
         require(_level < 7, "Incorrect level");
         launches.push(
             Launchpad({
-        totalCount : _totalCount,
-        soldCount : 0,
-        price : _price,
-        level : _level,
-        robiBoost : _robiBoost,
-        maxToUser : _maxToUser
-        })
+                totalCount : _totalCount,
+                soldCount : 0,
+                price : _price,
+                level : _level,
+                robiBoost : _robiBoost,
+                maxToUser : _maxToUser
+            })
         );
     }
 
