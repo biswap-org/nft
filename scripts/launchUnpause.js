@@ -10,10 +10,10 @@ async function main() {
   console.log(`Deployer address: ${ deployer.address}`);
   let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]);
 
-  console.log(`Launchpad set ${launchpadAddress} pause`);
+  console.log(`Launchpad set ${launchpadAddress} Unpause`);
   const Launchpad = await ethers.getContractFactory('LaunchpadNftRandomNY');
   launchpad = await Launchpad.attach(launchpadAddress, {nonce: nonce, gasLimit: 3000000, gasPrice: 80000000000})
-  let tx = await launchpad.pause();
+  let tx = await launchpad.unpause();
   console.log(await tx.wait());
 }
 
