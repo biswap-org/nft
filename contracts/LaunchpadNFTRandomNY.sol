@@ -56,6 +56,7 @@ contract LaunchpadNftRandomNY is ReentrancyGuard, Ownable, Pausable {
         biswapNFT = _biswapNFT;
         dealToken = _dealToken;
         treasuryAddress = _treasuryAddress;
+
         launches.push(
             Launchpad({
                 totalCount : 30000,
@@ -66,6 +67,8 @@ contract LaunchpadNftRandomNY is ReentrancyGuard, Ownable, Pausable {
                 maxToUser : 3
             })
         );
+
+        _pause();
 
         brackets[0].count = 1500;
         brackets[0].robiBoost = 1 ether;
