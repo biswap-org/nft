@@ -16,7 +16,7 @@ async function main() {
   let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]);
 
   console.log(`Start deploy launchpad Random`);
-  const Launchpad = await ethers.getContractFactory('LaunchpadNftRandom');
+  const Launchpad = await ethers.getContractFactory('LaunchpadNftRandomNY');
   launchpad = await Launchpad.deploy(biswapNFTAddress, dealTokenAddress, treasuryAddress, {nonce: nonce});
   await launchpad.deployTransaction.wait();
   console.log(`Launchpad Random deployed to ${launchpad.address}`);
@@ -35,13 +35,7 @@ async function main() {
   } else{
     console.log(`WARNING!!! Role not added!!!`);
   }
-  //
-  console.log(`Verify contract`);
-  let res = await hre.run("verify:verify", {
-    address: launchpad.address,
-    constructorArguments: [biswapNFTAddress, dealTokenAddress, treasuryAddress]
-  })
-  console.log(res);
+
 }
 
 main()
