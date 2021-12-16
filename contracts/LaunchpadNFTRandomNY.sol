@@ -63,7 +63,7 @@ contract LaunchpadNftRandomNY is ReentrancyGuard, Ownable, Pausable {
                 price : 50 ether,
                 level : 1,
                 robiBoost : 0,
-                maxToUser : 6
+                maxToUser : 3
             })
         );
 
