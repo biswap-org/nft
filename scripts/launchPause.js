@@ -13,8 +13,8 @@ async function main() {
   console.log(`Start deploy launchpad Random`);
   const Launchpad = await ethers.getContractFactory('LaunchpadNftRandomNY');
   launchpad = await Launchpad.attach(launchpadAddress, {nonce: nonce, gasLimit: 3000000, gasPrice: 80000000000})
-  await launchpad.pause();
-
+  let tx = await launchpad.pause();
+  console.log(await tx.wait());
 }
 
 main()
