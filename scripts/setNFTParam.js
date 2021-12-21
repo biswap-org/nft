@@ -1,14 +1,6 @@
 //npx hardhat run scripts/deployMarketplace.js --network mainnetBSC
 const { ethers, network } = require(`hardhat`);
 
-//BSW, WBNB, BUSD, USDT
-const swapFeeRewardAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
-const bswToken = `0x965f527d9159dce6288a2219db51fc6eef120dd1`;
-const usdtToken = `0x55d398326f99059ff775485246999027b3197955`;
-const wbnbToken = `0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c`;
-const busdToken = `0xe9e7cea3dedca5984780bafc599bd69add087d56`;
-
-
 const royaltyBusAddress = `0xcD3CD3f8764aA2FD474421c8c81514A50883678a`;
 const royaltyPlayerAddress = `0x8D318c35B14D168ea69b76FE6Ed8b77A24C86FA4`;
 
