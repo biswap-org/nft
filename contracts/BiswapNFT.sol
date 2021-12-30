@@ -11,38 +11,38 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     bytes32 public constant TOKEN_MINTER_ROLE = keccak256("TOKEN_MINTER");
     bytes32 public constant LAUNCHPAD_TOKEN_MINTER = keccak256("LAUNCHPAD_TOKEN_MINTER");
     bytes32 public constant RB_SETTER_ROLE = keccak256("RB_SETTER");
-    uint256 public constant MAX_ARRAY_LENGTH_PER_REQUEST = 30;
+    uint public constant MAX_ARRAY_LENGTH_PER_REQUEST = 30;
 
     string private _internalBaseURI;
-    uint256 private _initialRobiBoost;
-    uint256 private _burnRBPeriod; //in days
+    uint private _initialRobiBoost;
+    uint private _burnRBPeriod; //in days
     uint8 private _levelUpPercent; //in percents
-    uint256[7] private _rbTable;
-    uint256[7] private _levelTable;
-    uint256 private _lastTokenId;
+    uint[7] private _rbTable;
+    uint[7] private _levelTable;
+    uint private _lastTokenId;
 
     struct Token {
-        uint256 robiBoost;
-        uint256 level;
+        uint robiBoost;
+        uint level;
         bool stakeFreeze; //Lock a token when it is staked
-        uint256 createTimestamp;
+        uint createTimestamp;
     }
 
     mapping(uint256 => Token) private _tokens;
-    mapping(address => mapping(uint256 => uint256)) private _robiBoost;
-    mapping(uint256 => uint256) private _robiBoostTotalAmounts;
+    mapping(address => mapping(uint => uint)) private _robiBoost;
+    mapping(uint => uint) private _robiBoostTotalAmounts;
 
-    event GainRB(uint256 indexed tokenId, uint256 newRB);
-    event RBAccrued(address user, uint256 amount);
-    event LevelUp(address indexed user, uint256 indexed newLevel, uint256[] parentsTokensId);
+    event GainRB(uint indexed tokenId, uint newRB);
+    event RBAccrued(address user, uint amount);
+    event LevelUp(address indexed user, uint indexed newLevel, uint[] parentsTokensId);
     //BNF-01, SFR-01
-    event Initialize(string baseURI, uint256 initialRobiBoost, uint256 burnRBPeriod);
-    event TokenMint(address indexed to, uint256 indexed tokenId, uint256 level, uint256 robiBoost);
+    event Initialize(string baseURI, uint initialRobiBoost, uint burnRBPeriod);
+    event TokenMint(address indexed to, uint indexed tokenId, uint level, uint robiBoost);
 
     function initialize(
         string memory baseURI,
-        uint256 initialRobiBoost,
-        uint256 burnRBPeriod
+        uint initialRobiBoost,
+        uint burnRBPeriod
     ) public initializer {
         __ERC721_init("BiswapRobbiesEarn", "BRE");
         __ERC721Enumerable_init();
@@ -77,21 +77,21 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     //External functions --------------------------------------------------------------------------------------------
 
-    function getLevel(uint256 tokenId) external view returns (uint256) {
+    function getLevel(uint tokenId) external view returns (uint) {
         return _tokens[tokenId].level;
     }
 
-    function getRB(uint256 tokenId) external view returns (uint256) {
+    function getRB(uint tokenId) external view returns (uint) {
         return _tokens[tokenId].robiBoost;
     }
 
-    function getInfoForStaking(uint256 tokenId)
+    function getInfoForStaking(uint tokenId)
         external
         view
         returns (
             address tokenOwner,
             bool stakeFreeze,
-            uint256 robiBoost
+            uint robiBoost
         )
     {
         tokenOwner = ownerOf(tokenId);
@@ -99,11 +99,11 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         stakeFreeze = _tokens[tokenId].stakeFreeze;
     }
 
-    function setRBTable(uint256[7] calldata rbTable) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRBTable(uint[7] calldata rbTable) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _rbTable = rbTable;
     }
 
-    function setLevelTable(uint256[7] calldata levelTable) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setLevelTable(uint[7] calldata levelTable) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _levelTable = levelTable;
     }
 
@@ -116,24 +116,24 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         _internalBaseURI = newBaseUri;
     }
 
-    function setBurnRBPeriod(uint256 newPeriod) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBurnRBPeriod(uint newPeriod) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(newPeriod > 0, "Wrong period");
         _burnRBPeriod = newPeriod;
     }
 
-    function tokenFreeze(uint256 tokenId) external onlyRole(TOKEN_FREEZER) {
+    function tokenFreeze(uint tokenId) external onlyRole(TOKEN_FREEZER) {
         // Clear all approvals when freeze token
         _approve(address(0), tokenId);
 
         _tokens[tokenId].stakeFreeze = true;
     }
 
-    function tokenUnfreeze(uint256 tokenId) external onlyRole(TOKEN_FREEZER) {
+    function tokenUnfreeze(uint tokenId) external onlyRole(TOKEN_FREEZER) {
         _tokens[tokenId].stakeFreeze = false;
     }
 
-    function accrueRB(address user, uint256 amount) external onlyRole(RB_SETTER_ROLE) {
-        uint256 curDay = block.timestamp / 86400;
+    function accrueRB(address user, uint amount) external onlyRole(RB_SETTER_ROLE) {
+        uint curDay = block.timestamp / 86400;
         increaseRobiBoost(user, curDay, amount);
         emit RBAccrued(user, _robiBoost[user][curDay]);
     }
@@ -150,46 +150,46 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         return interfaceId == type(IERC721EnumerableUpgradeable).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function remainRBToNextLevel(uint256[] calldata tokenId) public view returns (uint256[] memory) {
+    function remainRBToNextLevel(uint[] calldata tokenId) public view returns (uint[] memory) {
         require(tokenId.length <= MAX_ARRAY_LENGTH_PER_REQUEST, "Array length gt max");
-        uint256[] memory remainRB = new uint256[](tokenId.length);
-        for (uint256 i = 0; i < tokenId.length; i++) {
+        uint[] memory remainRB = new uint[](tokenId.length);
+        for (uint i = 0; i < tokenId.length; i++) {
             require(_exists(tokenId[i]), "ERC721: token does not exist");
             remainRB[i] = _remainRBToMaxLevel(tokenId[i]);
         }
         return remainRB;
     }
 
-    function getRbBalance(address user) public view returns (uint256) {
+    function getRbBalance(address user) public view returns (uint) {
         return _getRbBalance(user);
     }
 
-    function getRbBalanceByDays(address user, uint256 dayCount) public view returns (uint256[] memory) {
-        uint256[] memory balance = new uint256[](dayCount);
-        for (uint256 i = 0; i < dayCount; i++) {
+    function getRbBalanceByDays(address user, uint dayCount) public view returns (uint[] memory) {
+        uint[] memory balance = new uint[](dayCount);
+        for (uint i = 0; i < dayCount; i++) {
             balance[i] = _robiBoost[user][(block.timestamp - i * 1 days) / 86400];
         }
         return balance;
     }
 
-    function getRbTotalAmount(uint256 period) public view returns (uint256 amount) {
-        for (uint256 i = 0; i <= period; i++) {
+    function getRbTotalAmount(uint period) public view returns (uint amount) {
+        for (uint i = 0; i <= period; i++) {
             amount += _robiBoostTotalAmounts[(block.timestamp - i * 1 days) / 86400];
         }
         return amount;
     }
 
-    function getToken(uint256 _tokenId)
+    function getToken(uint _tokenId)
         public
         view
         returns (
-            uint256 tokenId,
+            uint tokenId,
             address tokenOwner,
-            uint256 level,
-            uint256 rb,
+            uint level,
+            uint rb,
             bool stakeFreeze,
-            uint256 createTimestamp,
-            uint256 remainToNextLevel,
+            uint createTimestamp,
+            uint remainToNextLevel,
             string memory uri
         )
     {
@@ -216,7 +216,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     function mint(address to) public onlyRole(TOKEN_MINTER_ROLE) nonReentrant {
         require(to != address(0), "Address can not be zero");
         _lastTokenId += 1;
-        uint256 tokenId = _lastTokenId;
+        uint tokenId = _lastTokenId;
         _tokens[tokenId].robiBoost = _initialRobiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = 1; //start from 1 level
@@ -226,28 +226,28 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     //BNF-02, SCN-01, SFR-02
     function launchpadMint(
         address to,
-        uint256 level,
-        uint256 robiBoost
+        uint level,
+        uint robiBoost
     ) public onlyRole(LAUNCHPAD_TOKEN_MINTER) nonReentrant {
         require(to != address(0), "Address can not be zero");
         require(_rbTable[level] >= robiBoost, "RB Value out of limit");
         _lastTokenId += 1;
-        uint256 tokenId = _lastTokenId;
+        uint tokenId = _lastTokenId;
         _tokens[tokenId].robiBoost = robiBoost;
         _tokens[tokenId].createTimestamp = block.timestamp;
         _tokens[tokenId].level = level;
         _safeMint(to, tokenId);
     }
 
-    function levelUp(uint256[] calldata tokenId) public nonReentrant {
+    function levelUp(uint[] calldata tokenId) public nonReentrant {
         require(tokenId.length <= MAX_ARRAY_LENGTH_PER_REQUEST, "Array length gt max");
-        uint256 currentLevel = _tokens[tokenId[0]].level;
+        uint currentLevel = _tokens[tokenId[0]].level;
         require(_levelTable[currentLevel] != 0, "This level not upgradable");
-        uint256 numbersOfToken = _levelTable[currentLevel];
+        uint numbersOfToken = _levelTable[currentLevel];
         require(numbersOfToken == tokenId.length, "Wrong numbers of tokens received");
-        uint256 neededRb = numbersOfToken * _rbTable[currentLevel];
-        uint256 cumulatedRb = 0;
-        for (uint256 i = 0; i < numbersOfToken; i++) {
+        uint neededRb = numbersOfToken * _rbTable[currentLevel];
+        uint cumulatedRb = 0;
+        for (uint i = 0; i < numbersOfToken; i++) {
             Token memory token = _tokens[tokenId[i]]; //safe gas
             require(token.level == currentLevel, "Token not from this level");
             cumulatedRb += token.robiBoost;
@@ -260,24 +260,54 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         emit LevelUp(msg.sender, (currentLevel + 1), tokenId);
     }
 
-    function sendRBToToken(uint256[] calldata tokenId, uint256[] calldata amount) public nonReentrant {
+    function sendRBToToken(uint[] calldata tokenId, uint[] calldata amount) public nonReentrant {
         _sendRBToToken(tokenId, amount);
     }
 
-    function sendRBToMaxInTokenLevel(uint256[] calldata tokenId) public nonReentrant {
-        require(tokenId.length <= MAX_ARRAY_LENGTH_PER_REQUEST, "Array length gt max");
-        uint256 neededAmount;
-        uint256[] memory amounts = new uint256[](tokenId.length);
-        for (uint256 i = 0; i < tokenId.length; i++) {
-            uint256 amount = _remainRBToMaxLevel(tokenId[i]);
+    function exchangeRB(uint amount, address userAddress) public nonReentrant onlyRole(RB_SETTER_ROLE) returns (bool) {
+        uint calcAmount = amount;
+        uint period = _burnRBPeriod;
+        uint currentRB;
+        uint curDay;
+        while (calcAmount > 0 || period > 0) {
+            curDay = (block.timestamp - period * 1 days) / 1 days;
+            currentRB = _robiBoost[userAddress][curDay];
+            if (currentRB == 0) {
+                period--;
+                continue;
+            }
+            if (calcAmount > currentRB) {
+                calcAmount -= currentRB;
+                _robiBoostTotalAmounts[curDay] -= currentRB;
+                delete _robiBoost[userAddress][curDay];
+            } else {
+                decreaseRobiBoost(userAddress, curDay, calcAmount);
+                calcAmount = 0;
+                break;
+            }
+            period--;
+        }
+        if (calcAmount == 0) {
+            return (true);
+        } else {
+            revert("Not enough RB balance");
+        }
+    }
+
+    function sendRBToMaxInTokenLevel(uint[] calldata tokenId) public nonReentrant {
+        require(tokenId.length <= MAX_ARRAY_LENGTH_PER_REQUEST, "Array length max");
+        uint neededAmount;
+        uint[] memory amounts = new uint[](tokenId.length);
+        for (uint i = 0; i < tokenId.length; i++) {
+            uint amount = _remainRBToMaxLevel(tokenId[i]);
             amounts[i] = amount;
             neededAmount += amount;
         }
-        uint256 availableAmount = _getRbBalance(msg.sender);
+        uint availableAmount = _getRbBalance(msg.sender);
         if (availableAmount >= neededAmount) {
             _sendRBToToken(tokenId, amounts);
         } else {
-            revert("insufficient funds");
+            revert("Insufficient funds");
         }
     }
 
@@ -303,26 +333,26 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function _getRbBalance(address user) internal view returns (uint256 balance) {
-        for (uint256 i = 0; i <= _burnRBPeriod; i++) {
+    function _getRbBalance(address user) internal view returns (uint balance) {
+        for (uint i = 0; i <= _burnRBPeriod; i++) {
             balance += _robiBoost[user][(block.timestamp - i * 1 days) / 86400];
         }
         return balance;
     }
 
-    function _remainRBToMaxLevel(uint256 tokenId) internal view returns (uint256) {
-        return _rbTable[uint256(_tokens[tokenId].level)] - _tokens[tokenId].robiBoost;
+    function _remainRBToMaxLevel(uint tokenId) internal view returns (uint) {
+        return _rbTable[uint(_tokens[tokenId].level)] - _tokens[tokenId].robiBoost;
     }
 
-    function _sendRBToToken(uint256[] memory tokenId, uint256[] memory amount) internal {
+    function _sendRBToToken(uint[] memory tokenId, uint[] memory amount) internal {
         require(tokenId.length <= MAX_ARRAY_LENGTH_PER_REQUEST, "Array length gt max");
         require(tokenId.length == amount.length, "Wrong length of arrays");
-        for (uint256 i = 0; i < tokenId.length; i++) {
+        for (uint i = 0; i < tokenId.length; i++) {
             require(ownerOf(tokenId[i]) == msg.sender, "Not owner of token");
-            uint256 calcAmount = amount[i];
-            uint256 period = _burnRBPeriod;
-            uint256 currentRB;
-            uint256 curDay;
+            uint calcAmount = amount[i];
+            uint period = _burnRBPeriod;
+            uint currentRB;
+            uint curDay;
             while (calcAmount > 0 || period > 0) {
                 curDay = (block.timestamp - period * 1 days) / 86400;
                 currentRB = _robiBoost[msg.sender][curDay];
@@ -351,16 +381,16 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     //Private functions --------------------------------------------------------------------------------------------
 
-    function _mintLevelUp(uint256 level, uint256[] memory tokenId) private {
-        uint256 newRobiBoost = 0;
-        for (uint256 i = 0; i < tokenId.length; i++) {
+    function _mintLevelUp(uint level, uint[] memory tokenId) private {
+        uint newRobiBoost = 0;
+        for (uint i = 0; i < tokenId.length; i++) {
             require(ownerOf(tokenId[i]) == msg.sender, "Not owner of token");
             newRobiBoost += _tokens[tokenId[i]].robiBoost;
             _burn(tokenId[i]);
         }
         newRobiBoost = newRobiBoost + (newRobiBoost * _levelUpPercent) / 100;
         _lastTokenId += 1;
-        uint256 newTokenId = _lastTokenId;
+        uint newTokenId = _lastTokenId;
         _tokens[newTokenId].robiBoost = newRobiBoost;
         _tokens[newTokenId].createTimestamp = block.timestamp;
         _tokens[newTokenId].level = level;
@@ -369,8 +399,8 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     function increaseRobiBoost(
         address user,
-        uint256 day,
-        uint256 amount
+        uint day,
+        uint amount
     ) private {
         _robiBoost[user][day] += amount;
         _robiBoostTotalAmounts[day] += amount;
@@ -378,19 +408,19 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
 
     function decreaseRobiBoost(
         address user,
-        uint256 day,
-        uint256 amount
+        uint day,
+        uint amount
     ) private {
         require(_robiBoost[user][day] >= amount && _robiBoostTotalAmounts[day] >= amount, "Wrong amount");
         _robiBoost[user][day] -= amount;
         _robiBoostTotalAmounts[day] -= amount;
     }
 
-    function _gainRB(uint256 tokenId, uint256 rb) private {
+    function _gainRB(uint tokenId, uint rb) private {
         require(_exists(tokenId), "Token does not exist");
         require(_tokens[tokenId].stakeFreeze == false, "Token is staked");
         Token storage token = _tokens[tokenId];
-        uint256 newRP = token.robiBoost + rb;
+        uint newRP = token.robiBoost + rb;
         require(newRP <= _rbTable[token.level], "RB value over limit by level");
         token.robiBoost = newRP;
         emit GainRB(tokenId, newRP);
