@@ -6,6 +6,7 @@ const toBN = (numb, power) =>  ethers.BigNumber.from(10).pow(power).mul(numb);
 
 const biswapNFTAddress = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
 const squidPlayerNFTAddress = `0xb00ED7E3671Af2675c551a1C26Ffdcc5b425359b`;
+const exchangerAddress = `0x45de5cBb576B04767e59049905662a6e6eC01496`;
 const burnRBPeriod = 10;
 const exchangeRate = toBN(20, 3);
 const divisor = toBN(1, 3);
@@ -18,21 +19,21 @@ async function main() {
     console.log(`Deployer address: ${ accounts[0].address }`);
     let nonce = await network.provider.send(`eth_getTransactionCount`, [accounts[0].address, "latest"]) - 1;
 
-    const Exchange = await ethers.getContractFactory(`RBToSEExchange`);
-    const exchange = await Exchange.deploy(
-        biswapNFTAddress,
-        squidPlayerNFTAddress,
-        burnRBPeriod,
-        exchangeRate,
-        divisor,
-        {nonce: ++nonce, gasLimit: 3000000}
-    )
-    await exchange.deployTransaction.wait();
-    console.log(`RB to SE Exchanger deployed to  ${exchange.address}`);
+    // const Exchange = await ethers.getContractFactory(`RBToSEExchange`);
+    // const exchange = await Exchange.deploy(
+    //     biswapNFTAddress,
+    //     squidPlayerNFTAddress,
+    //     burnRBPeriod,
+    //     exchangeRate,
+    //     divisor,
+    //     {nonce: ++nonce, gasLimit: 3000000}
+    // )
+    // await exchange.deployTransaction.wait();
+    // console.log(`RB to SE Exchanger deployed to  ${exchange.address}`);
     console.log(`Set role to Biswap NFT`);
     const BiswapNFT = await ethers.getContractFactory('BiswapNFT');
     const biswapNFT = await BiswapNFT.attach(biswapNFTAddress);
-    await biswapNFT.grantRole(RB_SETTER_ROLE, exchange.address, {nonce: ++nonce, gasLimit: 3000000});
+    await biswapNFT.grantRole(RB_SETTER_ROLE, exchangerAddress, {nonce: ++nonce, gasLimit: 3000000});
 
     console.log(`Set role to Squid Player NFT`);
     const SquidPlayerNFTABI = [{
@@ -54,7 +55,7 @@ async function main() {
         "type": "function"
     }];
     const squidPlayerNFT = await ethers.getContractAt(SquidPlayerNFTABI, squidPlayerNFTAddress);
-    await squidPlayerNFT.grantRole(SE_BOOST_ROLE, exchange.address, {nonce: ++nonce, gasLimit: 3000000});
+    await squidPlayerNFT.grantRole(SE_BOOST_ROLE, exchangerAddress, {nonce: ++nonce, gasLimit: 3000000});
 
 }
 
