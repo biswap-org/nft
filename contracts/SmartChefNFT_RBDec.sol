@@ -18,7 +18,7 @@ interface IBiswapNFT {
     function getLevel(uint tokenId) external view returns (uint);
 }
 
-contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
+contract SmartChefNFTRBDec is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint public totalRBSupply;
