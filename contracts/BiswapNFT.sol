@@ -38,6 +38,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     //BNF-01, SFR-01
     event Initialize(string baseURI, uint initialRobiBoost, uint burnRBPeriod);
     event TokenMint(address indexed to, uint indexed tokenId, uint level, uint robiBoost);
+    event RbDecrease(uint[] tokensId, uint[] finalRB);
 
     function initialize(
         string memory baseURI,
@@ -136,6 +137,30 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         uint curDay = block.timestamp / 86400;
         increaseRobiBoost(user, curDay, amount);
         emit RBAccrued(user, _robiBoost[user][curDay]);
+    }
+
+    function decreaseRB(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel, address user) external onlyRole(RB_SETTER_ROLE) returns(uint decreaseAmount) {
+        require(decreasePercent <= 1e12, "Wrong decrease percent");
+        uint[] memory finalRB = new uint[](tokensId.length);
+        decreaseAmount = 0;
+        for(uint i = 0; i < tokensId.length; i++){
+            if(_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
+            require(ownerOf(tokensId[i]) == user, "Not owner");
+            uint currentRB = _tokens[tokensId[i]].robiBoost;
+            finalRB[i] = currentRB * decreasePercent / 1e12;
+            _tokens[tokensId[i]].robiBoost = finalRB[i];
+            decreaseAmount += finalRB[i];
+        }
+        emit RbDecrease(tokensId, finalRB);
+    }
+
+    function decreaseRBView(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel) external view returns(uint decreaseAmount) {
+        require(decreasePercent <= 1e12, "Wrong decrease percent");
+        decreaseAmount = 0;
+        for(uint i = 0; i < tokensId.length; i++){
+            if(_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
+            decreaseAmount += _tokens[tokensId[i]].robiBoost * decreasePercent / 1e12;
+        }
     }
 
     //Public functions --------------------------------------------------------------------------------------------

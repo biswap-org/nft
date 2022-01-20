@@ -13,6 +13,9 @@ interface IBiswapNFT {
     function tokenUnfreeze(uint tokenId) external;
     function getRB(uint tokenId) external view returns(uint);
     function getInfoForStaking(uint tokenId) external view returns(address tokenOwner, bool stakeFreeze, uint robiBoost);
+    function decreaseRB(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel, address user) external returns(uint decreaseAmount);
+    function decreaseRBView(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel) external view returns(uint decreaseAmount);
+    function getLevel(uint tokenId) external view returns (uint);
 }
 
 contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
@@ -23,10 +26,14 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
     address[] public listRewardTokens;
     IBiswapNFT public nftToken;
 
+    uint minDecreaseLevel;
+    uint decreasePerPeriod; //base 1e12
+
     // Info of each user
     struct UserInfo {
         uint[] stakedTokensId;
         uint stakedRbAmount;
+        uint lastActionDay;
     }
 
     struct RewardToken {
@@ -40,6 +47,7 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
     mapping (address => UserInfo) public userInfo;
     mapping (address => mapping(address => uint)) public rewardDebt; //user => (rewardToken => rewardDebt);
     mapping (address => RewardToken) public rewardTokens;
+    mapping(uint => uint[]) public compoundInterest;
 
     event AddNewTokenReward(address token);
     event DisableTokenReward(address token);
@@ -50,6 +58,8 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
 
     constructor(IBiswapNFT _nftToken) {
         nftToken = _nftToken;
+        minDecreaseLevel = 1;
+        decreasePerPeriod = 4000000000;
     }
 
     function isTokenInList(address _token) internal view returns(bool){
@@ -58,6 +68,13 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
             if(_listRewardTokens[i] == _token) return true;
         }
         return false;
+    }
+
+    function getUserInfo(address _user) public view returns(uint[] memory _stakedTokensId, uint _stakedRbAmount, uint _lastActionBlockNumber) {
+        _stakedTokensId = new uint[](userInfo[_user].stakedTokensId.length);
+        _stakedTokensId = userInfo[_user].stakedTokensId;
+        _stakedRbAmount = userInfo[_user].stakedRbAmount;
+        _lastActionBlockNumber = userInfo[_user].lastActionDay;
     }
 
     function getUserStakedTokens(address _user) public view returns(uint[] memory){
@@ -85,6 +102,12 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
         rewardTokens[_newToken].enabled = true;
 
         emit AddNewTokenReward(_newToken);
+    }
+
+    function setDecreaseRBParams(uint _minDecreaseLevel, uint _decreasePerPeriod) public onlyOwner {
+        require(_decreasePerPeriod <= 1e12, "decrease per period out of bound");
+        minDecreaseLevel = _minDecreaseLevel;
+        decreasePerPeriod = _decreasePerPeriod;
     }
 
     function disableTokenReward(address _token) public onlyOwner {
@@ -122,6 +145,10 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
         emit ChangeTokenReward(_token, _rewardPerBlock);
     }
 
+    function calcCompoundInterest() external onlyOwner {
+        _calcCompoundInterest();
+    }
+
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint _from, uint _to) public pure returns (uint) {
         if(_to > _from){
@@ -132,11 +159,11 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
     }
 
     // View function to see pending Reward on frontend.
-    function pendingReward(address _user) external view returns (address[] memory, uint[] memory) {
+    function pendingReward(address _user) external view returns (address[] memory, uint[] memory, uint) { //TODO test me!
         UserInfo memory user = userInfo[_user];
         uint[] memory rewards = new uint[](listRewardTokens.length);
         if(user.stakedRbAmount == 0){
-            return (listRewardTokens, rewards);
+            return (listRewardTokens, rewards, 0);
         }
         uint _totalRBSupply = totalRBSupply;
         uint _multiplier = getMultiplier(lastRewardBlock, block.number);
@@ -158,7 +185,15 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
             }
             rewards[i] = (user.stakedRbAmount * _accTokenPerShare / 1e12) - rewardDebt[_user][curToken];
         }
-        return (listRewardTokens, rewards);
+        uint decreaseAmount =  pendingDecreaseRB(_user);
+        return (listRewardTokens, rewards, decreaseAmount);
+    }
+
+    function pendingDecreaseRB(address _user) public view returns(uint decreaseAmount){
+        UserInfo memory user = userInfo[_user];
+        uint daysPassed = block.timestamp/1 days - user.lastActionDay;
+        uint decreasePercent = getDecreasePercent(daysPassed);
+        decreaseAmount = nftToken.decreaseRBView(user.stakedTokensId, decreasePercent, minDecreaseLevel);
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -202,6 +237,50 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
         }
     }
 
+    function decreaseRB(address _user) internal {
+        UserInfo storage user = userInfo[_user];
+        if(user.lastActionDay == 0) user.lastActionDay = block.timestamp/1 days;
+        uint daysPassed = block.timestamp/1 days - user.lastActionDay;
+        if(user.stakedRbAmount == 0 || daysPassed == 0) return;
+        uint decreasePercent = getDecreasePercent(daysPassed);
+        uint decreaseAmount = nftToken.decreaseRB(user.stakedTokensId, decreasePercent, minDecreaseLevel, _user);
+        user.stakedRbAmount -= decreaseAmount;
+        totalRBSupply -= decreaseAmount;
+        user.lastActionDay = block.timestamp/1 days;
+    }
+
+    function getDecreasePercent(uint period) internal view returns(uint res){
+        require(period < 10000, "Period to high");
+        res = 1e12;
+        uint i = 3;
+        while(i >=0){
+            if(period >= 10**i){
+                uint numb = period / 10**i;
+                res = res * compoundInterest[i][numb]/1e12;
+                period -= numb * 10**i;
+            }
+            if(i == 0) break;
+            i--;
+        }
+    }
+
+    function _calcCompoundInterest() internal {
+        uint decPeriod = 0;
+        uint mult;
+        mult = (1e12 - decreasePerPeriod);
+        for(uint k = 0; k < 4; k++){
+            decPeriod = mult;
+            compoundInterest[k].push(1e12);
+            compoundInterest[k].push(decPeriod);
+            for(uint i = 0; i < 8; i++){
+                decPeriod = decPeriod * mult / 1e12;
+                compoundInterest[k].push(decPeriod);
+            }
+            mult = compoundInterest[k][1] * compoundInterest[k][9]/1e12;
+        }
+    }
+
+
     //SCN-01, SFR-02
     function _withdrawReward() internal {
         updatePool();
@@ -219,6 +298,7 @@ contract SmartChefNFTRBDic is Ownable, ReentrancyGuard {
                 IERC20(_listRewardTokens[i]).safeTransfer(address(msg.sender), pending);
             }
         }
+        decreaseRB(msg.sender);
     }
 
     function removeTokenIdFromUserInfo(uint index, address user) internal {
