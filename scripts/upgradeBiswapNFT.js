@@ -1,10 +1,9 @@
 const { ethers, network, hardhat, upgrades} = require(`hardhat`);
 
 const biswapNFTAddress = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
-const ownerAddress = `0xbafefe87d57d4c5187ed9bd5fab496b38abdd5ff`;
+const ownerAddress = `0xdb99fc9d9073feda71ef66200488b5fc652b1738`;
 let biswapNft;
 
-const smartChefAddress = `0x8F56515BF85dbF64DD3E282ab7f4D50Ff9791cC3`;
 
 async function main() {
     let accounts = await ethers.getSigners();
@@ -20,12 +19,6 @@ async function main() {
     await biswapNft.deployed();
     console.log(`Biswap NFT upgraded`);
 
-    biswapNft = BiswapNFT.attach(biswapNFTAddress);
-    console.log(`Setup roles`);
-    const TOKEN_FREEZER = await biswapNft.TOKEN_FREEZER();
-    const RB_SETTER_ROLE = await biswapNft.RB_SETTER_ROLE();
-    await biswapNft.grantRole(TOKEN_FREEZER, smartChefAddress,  {nonce: ++nonce, gasLimit: 5000000});
-    await biswapNft.grantRole(RB_SETTER_ROLE, smartChefAddress,  {nonce: ++nonce, gasLimit: 5000000});
 }
 
 main()
