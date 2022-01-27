@@ -20,6 +20,7 @@ async function main() {
     await biswapNft.deployed();
     console.log(`Biswap NFT upgraded`);
 
+    biswapNft = BiswapNFT.attach(biswapNFTAddress);
     console.log(`Setup roles`);
     const TOKEN_FREEZER = await biswapNft.TOKEN_FREEZER();
     const RB_SETTER_ROLE = await biswapNft.RB_SETTER_ROLE();
