@@ -149,7 +149,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
             uint currentRB = _tokens[tokensId[i]].robiBoost;
             finalRB[i] = currentRB * decreasePercent / 1e12;
             _tokens[tokensId[i]].robiBoost = finalRB[i];
-            decreaseAmount += finalRB[i];
+            decreaseAmount += currentRB - finalRB[i];
         }
         emit RbDecrease(tokensId, finalRB);
     }
@@ -159,7 +159,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         decreaseAmount = 0;
         for(uint i = 0; i < tokensId.length; i++){
             if(_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
-            decreaseAmount += _tokens[tokensId[i]].robiBoost * decreasePercent / 1e12;
+            decreaseAmount += _tokens[tokensId[i]].robiBoost - _tokens[tokensId[i]].robiBoost * decreasePercent / 1e12;
         }
     }
 
