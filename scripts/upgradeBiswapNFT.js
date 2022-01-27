@@ -13,9 +13,10 @@ async function main() {
         console.log(`Change deployer address. Current deployer: ${accounts[0].address}. Owner: ${ownerAddress}`);
         return;
     }
+    let nonce = await network.provider.send(`eth_getTransactionCount`, [accounts[0].address, "latest"]) - 1;
     console.log(`Start upgrade Biswap NFT contract`);
     const BiswapNFT = await ethers.getContractFactory(`BiswapNFT`);
-    biswapNft = await upgrades.upgradeProxy(biswapNFTAddress, BiswapNFT);
+    biswapNft = await upgrades.upgradeProxy(biswapNFTAddress, BiswapNFT,  {nonce: ++nonce, gasLimit: 5000000});
     await biswapNft.deployed();
     console.log(`Biswap NFT upgraded`);
 
