@@ -19,7 +19,7 @@ async function main() {
     console.log(`Deployer address: ${ accounts[0].address}`);
     let nonce = await network.provider.send(`eth_getTransactionCount`, [accounts[0].address, "latest"]) - 1;
 
-    if(accounts[0].address !== ownerAddress){
+    if(accounts[0].address.toLowerCase() !== ownerAddress.toLowerCase()){
         console.log(`Change deployer address. Current deployer: ${accounts[0].address}. Owner: ${ownerAddress}`);
         return;
     }
