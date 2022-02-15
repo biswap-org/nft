@@ -1,4 +1,4 @@
-//npx hardhat run scripts/addNewCollections.js --network mainnetBSC
+//npx hardhat run scripts/addNewCollections1502.js --network mainnetBSC
 const { ethers, network } = require(`hardhat`);
 
 //NFT tokens to whiteList
