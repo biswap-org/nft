@@ -18,7 +18,8 @@ async function main() {
     launchpad = await Launchpad.attach(launchpadAddress);
 
     console.log(`change start block`);
-    await launchpad.updateStartTimestamp(launchStartBlock, {nonce: ++nonce, gasLimit: 3e6});
+    // await launchpad.updateStartTimestamp(launchStartBlock, {nonce: ++nonce, gasLimit: 3e6});
+    await launchpad.pause();
     console.log(`Done`);
 }
 

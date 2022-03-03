@@ -164,7 +164,6 @@ contract PiratesLaunchpad is ReentrancyGuard, Ownable, Pausable {
     }
 
     function updateStartTimestamp(uint _startBlock) public onlyOwner {
-        require(launchStartBlock > block.number, "Already started");
         require(_startBlock > block.number, "Setting start to the past not allowed");
 
         launchStartBlock = _startBlock;
