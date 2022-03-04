@@ -8,8 +8,8 @@ const treasuryAddress = `0x2c0445a18dAB9C37CDcD7002bF7e6D777094EDdF`;
 //BSW token Address
 const dealTokenAddress = `0x965f527d9159dce6288a2219db51fc6eef120dd1`;
 const autoBswAddress = `0xa4b20183039b2F9881621C3A03732fBF0bfdff10`;
-const launchStartBlock = 15742060; //19:00
-const price = toBN(120,18);
+const launchStartBlock = 15767260; //19:00
+const price = toBN(125,18);
 
 const shipsNFT = `0x3Df7076b8beb46Dc26017e1D46E0e7046A1Ca41F`;
 const shipsVault = `0x4E0EBCF7652276806BA41922E343092B26b20eB4`;

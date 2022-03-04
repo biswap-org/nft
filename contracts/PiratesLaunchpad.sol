@@ -102,14 +102,14 @@ contract PiratesLaunchpad is ReentrancyGuard, Ownable, Pausable {
         //Add brackets
         brackets[0].instances.push(0);
         brackets[0].instances.push(2);
-        brackets[0].totalCount = 2450;
+        brackets[0].totalCount = 2446;
         brackets[1].instances.push(1);
         brackets[1].instances.push(2);
-        brackets[1].totalCount = 2450;
+        brackets[1].totalCount = 2455;
         brackets[2].instances.push(0);
         brackets[2].instances.push(2);
         brackets[2].instances.push(3);
-        brackets[2].totalCount = 50;
+        brackets[2].totalCount = 49;
         brackets[3].instances.push(1);
         brackets[3].instances.push(2);
         brackets[3].instances.push(3);
@@ -119,7 +119,7 @@ contract PiratesLaunchpad is ReentrancyGuard, Ownable, Pausable {
     // 0 - pirates
     // 1 - ships
     // 2 - art
-    // 3 - sand
+    // 3 - sandBox
 
     function updateInstanceOfNFT(uint _index, INFT _NFT, address _vault) public onlyOwner {
         require(address(_NFT)  != address(0) && _vault != address(0), "Address cant be zero");
@@ -165,7 +165,6 @@ contract PiratesLaunchpad is ReentrancyGuard, Ownable, Pausable {
 
     function updateStartTimestamp(uint _startBlock) public onlyOwner {
         require(_startBlock > block.number, "Setting start to the past not allowed");
-
         launchStartBlock = _startBlock;
     }
 
