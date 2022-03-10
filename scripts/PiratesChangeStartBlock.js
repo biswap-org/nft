@@ -19,7 +19,7 @@ async function main() {
 
     console.log(`change start block`);
     // await launchpad.updateStartTimestamp(launchStartBlock, {nonce: ++nonce, gasLimit: 3e6});
-    // await launchpad.pause();
+    await launchpad.manuallyCloseQueue(30, {nonce: ++nonce, gasLimit: 5e6});
     console.log(`Done`);
 }
 
