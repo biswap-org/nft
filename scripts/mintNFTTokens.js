@@ -5,7 +5,7 @@ const {BigNumber} = require("ethers");
 const toBN = (numb, power) =>  ethers.BigNumber.from(10).pow(power).mul(numb);
 
 const biswapNFTAddress = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`
-const to = `0xe843116517809C0d59c8a19dA4f7684f1d34433`
+const to = `0xe843116517809C0d59c8a19dA4f7684f1d34433B`
 const level = 1
 const rb = toBN(1,18);
 
@@ -20,7 +20,7 @@ async function main() {
     const BiswapNFT = await ethers.getContractFactory(`BiswapNFT`);
     biswapNft = await BiswapNFT.attach(biswapNFTAddress);
     for(let i = 0; i < 20; i++){
-        await biswapNft.launchpadMint(to, level, rb, {nonce: ++nonce, gasLimit: 5e6});
+        await biswapNft.launchpadMint(to, level, rb, {nonce: ++nonce, gasLimit: 1e6});
         console.log(`token ${+i+1} minted`);
     }
 
