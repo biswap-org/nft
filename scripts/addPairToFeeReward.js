@@ -1,8 +1,8 @@
 const { network, ethers  } = require(`hardhat`);
 const fs = require(`fs`)
 
-const feeRewardAddress = `0x3Aa5ebB10DC797CAC828524e59A333d0A371443c`;
-const tokensList = `./tokens.json`;
+const feeRewardAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
+// const tokensList = `./tokens.json`;
 
 
 async function main() {
@@ -12,17 +12,17 @@ async function main() {
     let SwapFeeReward = await ethers.getContractFactory(`SwapFeeRewardWithRB`);
     let swapFeeReward = await SwapFeeReward.attach(feeRewardAddress);
 
-    console.log(`Add tokens to white list in swap fee reward`);
-    let tokens = fs.readFileSync(tokensList, "utf-8");
-    tokens = JSON.parse(tokens);
-
-    let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]) - 1;
-    for (const item of tokens) {
-        console.log(`Try to add token ${item.name} address ${item.address} to contract`);
-        console.log(`nonce: `, nonce);
-        let tx = await swapFeeReward.addWhitelist(item.address, {nonce: ++nonce, gasLimit: 3000000});
-        await tx.wait();
-    }
+    // console.log(`Add tokens to white list in swap fee reward`);
+    // let tokens = fs.readFileSync(tokensList, "utf-8");
+    // tokens = JSON.parse(tokens);
+    //
+    // let nonce = await network.provider.send(`eth_getTransactionCount`, [deployer.address, "latest"]) - 1;
+    // for (const item of tokens) {
+    //     console.log(`Try to add token ${item.name} address ${item.address} to contract`);
+    //     console.log(`nonce: `, nonce);
+    //     let tx = await swapFeeReward.addWhitelist(item.address, {nonce: ++nonce, gasLimit: 3000000});
+    //     await tx.wait();
+    // }
 
     console.log(`Add pairs to swap fee reward`);
     let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
