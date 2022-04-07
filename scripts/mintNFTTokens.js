@@ -23,8 +23,8 @@ async function main() {
     bsplayers = await ethers.getContractAt(require(`../ABIs/bspContract.json`), bsPlayersAddress);
     bsbuses = await ethers.getContractAt(require(`../ABIs/bsbContract.json`), bsBusesAddress);
 
-    console.log(`Set minter role to buses contract`);
-    await bsbuses.grantRole(TOKEN_MINTER_ROLE, deployer.address, {nonce: ++nonce, gasLimit: 5e6});
+    // console.log(`Set minter role to buses contract`);
+    // await bsbuses.grantRole(TOKEN_MINTER_ROLE, deployer.address, {nonce: ++nonce, gasLimit: 5e6});
 
     console.log(`Mint tokens:`);
     console.log(`   - Mint Robi token`);
