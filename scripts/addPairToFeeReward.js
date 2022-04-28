@@ -29,6 +29,7 @@ async function main() {
   //function setPair(uint256 _pid, uint256 _percentReward)
   //function setPairEnabled(uint256 _pid, bool _enabled)
 
+  //BSW-1887
   console.log(`Change fee return percent`);
   const pairPercent = [
     {pid: 0, percent: 50},
@@ -117,7 +118,7 @@ async function main() {
       gasLimit: 3000000,
     });
     await tx.wait();
-    console.log(`Pair with address ${item} percent 45 added`);
+    console.log(`Pair with address ${item} percent 40 added`);
   }
 
   // let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
