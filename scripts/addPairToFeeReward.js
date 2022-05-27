@@ -31,40 +31,94 @@ async function main() {
 
   console.log(`Change fee return percent`);
   const pairPercent = [
-    {pid: 15, percent: 0},
-
+    {pid: 0, percent: 40},
+    {pid: 1, percent: 40},
+    {pid: 2, percent: 40},
+    {pid: 3, percent: 40},
+    {pid: 4, percent: 40},
+    {pid: 5, percent: 40},
+    {pid: 6, percent: 40},
+    {pid: 7, percent: 40},
+    {pid: 8, percent: 36},
+    {pid: 9, percent: 36},
+    {pid: 10, percent: 36},
+    {pid: 11, percent: 36},
+    {pid: 12, percent: 36},
+    {pid: 13, percent: 36},
+    {pid: 14, percent: 36},
+    {pid: 16, percent: 32},
+    {pid: 18, percent: 70},
+    {pid: 19, percent: 36},
+    {pid: 20, percent: 36},
+    {pid: 21, percent: 40},
+    {pid: 22, percent: 32},
+    {pid: 23, percent: 32},
+    {pid: 24, percent: 32},
+    {pid: 25, percent: 32},
+    {pid: 26, percent: 32},
+    {pid: 29, percent: 32},
+    {pid: 32, percent: 32},
+    {pid: 33, percent: 32},
+    {pid: 34, percent: 32},
+    {pid: 35, percent: 32},
+    {pid: 36, percent: 32},
+    {pid: 37, percent: 32},
+    {pid: 38, percent: 32},
+    {pid: 39, percent: 32},
+    {pid: 40, percent: 32},
+    {pid: 41, percent: 32},
+    {pid: 42, percent: 32},
+    {pid: 43, percent: 32},
+    {pid: 44, percent: 32},
+    {pid: 45, percent: 32},
+    {pid: 46, percent: 32},
+    {pid: 47, percent: 32},
+    {pid: 48, percent: 32},
+    {pid: 49, percent: 32},
+    {pid: 50, percent: 32},
+    {pid: 51, percent: 32},
+    {pid: 52, percent: 32},
+    {pid: 53, percent: 32},
+    {pid: 54, percent: 32},
+    {pid: 55, percent: 32},
+    {pid: 56, percent: 32},
+    {pid: 58, percent: 32},
+    {pid: 59, percent: 32},
+    {pid: 60, percent: 32},
+    {pid: 62, percent: 32},
   ]
   for(const item of pairPercent) {
-    let tx = await swapFeeReward.setPair(
+    await swapFeeReward.setPair(
       item.pid,
       item.percent,
       {nonce: ++nonce, gasLimit: 3000000}
     );
-    await tx.wait();
+
     console.log(`Pair pid: ${item.pid} percent changed to: ${item.percent}`);
   }
-  console.log(`Remove pairs from feeReward`);
-  let pidsToRemove = [15];
-  for (const item of pidsToRemove) {
-    let tx = await swapFeeReward.setPairEnabled(item, false, {
-      nonce: ++nonce,
-      gasLimit: 3000000,
-    });
-    await tx.wait();
-  }
 
-  // console.log(`Add pairs to swap fee reward`);
-  // let pairs = [
-  //   `0x5843d070F37ef8579CC3903B486DE1FDA80904D0`
-  // ];
-  // for (const item of pairs) {
-  //   let tx = await swapFeeReward.addPair(40, item, {
+  // console.log(`Remove pairs from feeReward`);
+  // let pidsToRemove = [15];
+  // for (const item of pidsToRemove) {
+  //   let tx = await swapFeeReward.setPairEnabled(item, false, {
   //     nonce: ++nonce,
   //     gasLimit: 3000000,
   //   });
-  //   await tx.wait();
-  //   console.log(`Pair with address ${item} percent 45 added`);
+  //
   // }
+
+  console.log(`Add pairs to swap fee reward`);
+  let pairs = [
+    `0x06Cd679121Ec37B0A2FD673D4976B09d81791856`
+  ];
+  for (const item of pairs) {
+    await swapFeeReward.addPair(40, item, {
+      nonce: ++nonce,
+      gasLimit: 3000000,
+    });
+
+    console.log(`Pair with address ${item} percent 40 added`);
+  }
 
   // let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
   // pairs = JSON.parse(pairs);
