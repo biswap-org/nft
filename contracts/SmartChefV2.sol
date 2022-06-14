@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: UNLICENSED
+//SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -44,22 +44,20 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
 
     function isTokenInList(address _token) internal view returns(bool){
         address[] memory _listRewardTokens = listRewardTokens;
-        bool thereIs = false;
         for(uint i = 0; i < _listRewardTokens.length; i++){
             if(_listRewardTokens[i] == _token){
-                thereIs = true;
-                break;
+                return true;
             }
         }
-        return thereIs;
+        return false;
     }
 
     function getUserStakedAmount(address _user) public view returns(uint){
         return stakedAmount[_user];
     }
 
-    function getListRewardTokens() public view returns(address[] memory){
-        address[] memory list = new address[](listRewardTokens.length);
+    function getListRewardTokens() public view returns(address[] memory list){
+        list = new address[](listRewardTokens.length);
         list = listRewardTokens;
         return list;
     }
