@@ -31,62 +31,63 @@ async function main() {
 
   console.log(`Change fee return percent`);
   const pairPercent = [
-    {pid: 0, percent: 36},
-    {pid: 1, percent: 36},
-    {pid: 2, percent: 36},
-    {pid: 3, percent: 36},
-    {pid: 4, percent: 36},
-    {pid: 5, percent: 36},
-    {pid: 6, percent: 36},
-    {pid: 7, percent: 36},
-    {pid: 8, percent: 32},
-    {pid: 9, percent: 32},
-    {pid: 10, percent: 32},
-    {pid: 11, percent: 32},
-    {pid: 12, percent: 32},
-    {pid: 13, percent: 32},
+    {pid: 0, percent: 32},
+    {pid: 1, percent: 32},
+    {pid: 2, percent: 32},
+    {pid: 3, percent: 32},
+    {pid: 4, percent: 32},
+    {pid: 5, percent: 32},
+    {pid: 6, percent: 32},
+    {pid: 7, percent: 32},
+    {pid: 8, percent: 29},
+    {pid: 9, percent: 29},
+    {pid: 10, percent: 29},
+    {pid: 11, percent: 29},
+    {pid: 12, percent: 29},
+    {pid: 13, percent: 29},
     {pid: 14, percent: 0},
-    {pid: 16, percent: 29},
+    {pid: 16, percent: 26},
     {pid: 18, percent: 70},
-    {pid: 19, percent: 32},
-    {pid: 20, percent: 32},
-    {pid: 21, percent: 36},
-    {pid: 22, percent: 29},
-    {pid: 23, percent: 29},
-    {pid: 24, percent: 29},
-    {pid: 25, percent: 29},
-    {pid: 26, percent: 29},
-    {pid: 29, percent: 29},
-    {pid: 32, percent: 29},
-    {pid: 33, percent: 29},
-    {pid: 34, percent: 29},
-    {pid: 35, percent: 29},
-    {pid: 36, percent: 29},
-    {pid: 37, percent: 29},
-    {pid: 38, percent: 29},
-    {pid: 39, percent: 29},
-    {pid: 40, percent: 29},
-    {pid: 41, percent: 29},
-    {pid: 42, percent: 29},
-    {pid: 43, percent: 29},
-    {pid: 44, percent: 29},
-    {pid: 45, percent: 29},
-    {pid: 46, percent: 29},
-    {pid: 47, percent: 29},
-    {pid: 48, percent: 29},
-    {pid: 49, percent: 29},
-    {pid: 50, percent: 29},
-    {pid: 51, percent: 29},
-    {pid: 52, percent: 29},
-    {pid: 53, percent: 29},
-    {pid: 54, percent: 29},
-    {pid: 55, percent: 29},
-    {pid: 56, percent: 29},
-    {pid: 58, percent: 29},
-    {pid: 59, percent: 29},
-    {pid: 60, percent: 29},
-    {pid: 62, percent: 29},
-    {pid: 63, percent: 36},
+    {pid: 19, percent: 29},
+    {pid: 20, percent: 29},
+    {pid: 21, percent: 32},
+    {pid: 22, percent: 26},
+    {pid: 23, percent: 26},
+    {pid: 24, percent: 26},
+    {pid: 25, percent: 26},
+    {pid: 26, percent: 26},
+    {pid: 29, percent: 26},
+    {pid: 32, percent: 26},
+    {pid: 33, percent: 26},
+    {pid: 34, percent: 26},
+    {pid: 35, percent: 26},
+    {pid: 36, percent: 26},
+    {pid: 37, percent: 26},
+    {pid: 38, percent: 26},
+    {pid: 39, percent: 26},
+    {pid: 40, percent: 26},
+    {pid: 41, percent: 26},
+    {pid: 42, percent: 26},
+    {pid: 43, percent: 26},
+    {pid: 44, percent: 26},
+    {pid: 45, percent: 26},
+    {pid: 46, percent: 26},
+    {pid: 47, percent: 26},
+    {pid: 48, percent: 26},
+    {pid: 49, percent: 26},
+    {pid: 50, percent: 26},
+    {pid: 51, percent: 26},
+    {pid: 52, percent: 26},
+    {pid: 53, percent: 26},
+    {pid: 54, percent: 26},
+    {pid: 55, percent: 26},
+    {pid: 56, percent: 26},
+    {pid: 58, percent: 26},
+    {pid: 59, percent: 26},
+    {pid: 60, percent: 26},
+    {pid: 62, percent: 26},
+    {pid: 63, percent: 32},
+    {pid: 64, percent: 26},
   ]
   for(const item of pairPercent) {
     await swapFeeReward.setPair(
@@ -108,18 +109,18 @@ async function main() {
   //
   // }
 
-  console.log(`Add pairs to swap fee reward`);
-  let pairs = [
-    `0x284F871d6F2D4fE070F1E18c355eF2825e676AA2` // MANA - USDT
-  ];
-  for (const item of pairs) {
-    await swapFeeReward.addPair(29, item, {
-      nonce: ++nonce,
-      gasLimit: 3000000,
-    });
-
-    console.log(`Pair with address ${item} percent 29 added`);
-  }
+  // console.log(`Add pairs to swap fee reward`);
+  // let pairs = [
+  //   `0x284F871d6F2D4fE070F1E18c355eF2825e676AA2` // MANA - USDT
+  // ];
+  // for (const item of pairs) {
+  //   await swapFeeReward.addPair(29, item, {
+  //     nonce: ++nonce,
+  //     gasLimit: 3000000,
+  //   });
+  //
+  //   console.log(`Pair with address ${item} percent 29 added`);
+  // }
 
   // let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
   // pairs = JSON.parse(pairs);

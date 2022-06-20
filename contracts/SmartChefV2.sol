@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-
+import './interfaces/IAutoBSW.sol';
 
 contract SmartChefV2 is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -13,9 +13,12 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
     uint public totalStakedSupply;
     uint public lastRewardBlock;
     address[] public listRewardTokens;
-    IERC20 stakeToken;
+    IERC20 public stakeToken;
     uint256 public stakingEndBlock;
 
+    IAutoBSW autoBSW;
+    uint public holderPoolMinAmount;
+    uint public maxLimitPerUser;
 
     struct RewardToken {
         uint rewardPerBlock;
@@ -25,6 +28,17 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
         bool enabled; // true - enable; false - disable
     }
 
+    struct UserInfo {
+        RewardToken[] rewardTokens;
+        uint[] pendingReward;
+        uint totalStakedSupply;
+        IERC20 stakeToken;
+        uint stakingEndBlock;
+        uint holderPoolAmount;
+        uint holderPoolMinAmount;
+        uint stakedAmount;
+        uint maxLimitPerUser;
+    }
 
     mapping (address => uint) public stakedAmount; // Info of each user staked amount
     mapping (address => mapping(address => uint)) public rewardDebt; //user => (rewardToken => rewardDebt);
@@ -37,9 +51,19 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
     event UnstakeToken(address indexed user, uint amount);
     event EmergencyWithdraw(address indexed user, uint amount);
 
-    constructor(IERC20 _stakeToken, uint _stakingEndBlock) {
+    constructor(IERC20 _stakeToken, uint _stakingEndBlock, IAutoBSW _autoBSW, uint _holderPoolMinAmount, uint _limitPerUser) {
+        require(address(_stakeToken) != address(0) && address(_autoBSW) != address(0), "address cant be zero");
+        require(_stakingEndBlock > block.number, "bad end block");
         stakeToken = _stakeToken;
         stakingEndBlock = _stakingEndBlock;
+        autoBSW = _autoBSW;
+        holderPoolMinAmount = _holderPoolMinAmount;
+        maxLimitPerUser = _limitPerUser;
+    }
+
+    modifier holderPoolCheck(address _user){
+        require(_getHolderPoolAmount(_user) >= holderPoolMinAmount, "Need more stake in holder pool");
+        _;
     }
 
     function isTokenInList(address _token) internal view returns(bool){
@@ -60,6 +84,14 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
         list = new address[](listRewardTokens.length);
         list = listRewardTokens;
         return list;
+    }
+
+    function getHolderPoolAmount(address _user) public view returns(uint){
+        return _getHolderPoolAmount(_user);
+    }
+
+    function _getHolderPoolAmount(address _user) internal view returns(uint holderPoolAmount){
+        holderPoolAmount = autoBSW.balanceOf() * autoBSW.userInfo(_user).shares / autoBSW.totalShares();
     }
 
     function addNewTokenReward(address _newToken, uint _startBlock, uint _rewardPerBlock) public onlyOwner {
@@ -123,8 +155,25 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
             return stakingEndBlock - _from;
         }
     }
+    // View function to see user info on frontend
+    function getUserInfo(address _user) external view returns(UserInfo memory info){
+        uint tokensLength = listRewardTokens.length;
+        info.rewardTokens = new RewardToken[](tokensLength);
+        for(uint i = 0; i < tokensLength; i++){
+            info.rewardTokens[i] = rewardTokens[listRewardTokens[i]];
+        }
+        (, info.pendingReward) = this.pendingReward(_user);
+        info.totalStakedSupply = totalStakedSupply;
+        info.stakeToken = stakeToken;
+        info.stakingEndBlock = stakingEndBlock;
+        info.holderPoolAmount = getHolderPoolAmount(_user);
+        info.holderPoolMinAmount = holderPoolMinAmount;
+        info.stakedAmount = stakedAmount[_user];
+        info.maxLimitPerUser = maxLimitPerUser;
+        return info;
+    }
 
-    // View function to see pending Reward on frontend.
+    // View function to see pending Reward on frontend
     function pendingReward(address _user) external view returns (address[] memory, uint[] memory) {
         uint _stakedAmount = stakedAmount[_user];
         uint[] memory rewards = new uint[](listRewardTokens.length);
@@ -197,7 +246,7 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
     }
 
     //SCN-01, SFR-02
-    function _withdrawReward() internal {
+    function _withdrawReward() internal holderPoolCheck(msg.sender){
         updatePool();
         uint _stakedAmount = stakedAmount[msg.sender];
         address[] memory _listRewardTokens = listRewardTokens;
@@ -214,12 +263,14 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
             }
         }
     }
+
     //stake tokens to the pool
     function stake(uint _amount) external nonReentrant {
         require(_amount > 0, "Amount must be greater than zero");
         _withdrawReward();
         stakeToken.safeTransferFrom(msg.sender, address(this), _amount);
         stakedAmount[msg.sender] += _amount;
+        require(stakedAmount[msg.sender] <= maxLimitPerUser, "limit reached");
         totalStakedSupply += _amount;
         _updateRewardDebt(msg.sender);
         emit StakeToken(msg.sender, _amount);
@@ -238,7 +289,7 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyUnstake() external {
+    function emergencyUnstake() external holderPoolCheck(msg.sender){
         uint _stakedAmount = stakedAmount[msg.sender];
         totalStakedSupply -= _stakedAmount;
         delete stakedAmount[msg.sender];
@@ -251,13 +302,13 @@ contract SmartChefV2 is Ownable, ReentrancyGuard {
 
     // Withdraw reward token. EMERGENCY ONLY.
     function emergencyRewardTokenWithdraw() external onlyOwner {
-//        require(address(stakeToken) != _token, "Cant withdraw stake token");
-//        require(IERC20(_token).balanceOf(address(this)) >= _amount, "Not enough balance");
+        //        require(address(stakeToken) != _token, "Cant withdraw stake token");
+        //        require(IERC20(_token).balanceOf(address(this)) >= _amount, "Not enough balance");
         for(uint i = 0; i < listRewardTokens.length; i++){
             address _token = listRewardTokens[i];
             uint _amount = address(stakeToken) != _token ?
-                IERC20(_token).balanceOf(address(this)) :
-                IERC20(_token).balanceOf(address(this)) - totalStakedSupply;
+            IERC20(_token).balanceOf(address(this)) :
+            IERC20(_token).balanceOf(address(this)) - totalStakedSupply;
             if(_amount > 0) IERC20(_token).safeTransfer(msg.sender, _amount);
         }
     }
