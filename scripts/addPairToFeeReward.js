@@ -110,17 +110,17 @@ async function main() {
   // }
 
   // console.log(`Add pairs to swap fee reward`);
-  let pairs = [
-    `0x1Cba970a6E06d4BcC0c4717BE677d1A8AA0211DA` // ETC - BNB
-  ];
-  for (const item of pairs) {
-    await swapFeeReward.addPair(5, item, {
-      nonce: ++nonce,
-      gasLimit: 3000000,
-    });
-
-    console.log(`Pair with address ${item} percent 29 added`);
-  }
+  // let pairs = [
+  //   `0x1Cba970a6E06d4BcC0c4717BE677d1A8AA0211DA` // ETC - BNB
+  // ];
+  // for (const item of pairs) {
+  //   await swapFeeReward.addPair(5, item, {
+  //     nonce: ++nonce,
+  //     gasLimit: 3000000,
+  //   });
+  //
+  //   console.log(`Pair with address ${item} percent 29 added`);
+  // }
 
   // let pairs = fs.readFileSync(`./Pair list.json`, "utf-8");
   // pairs = JSON.parse(pairs);
