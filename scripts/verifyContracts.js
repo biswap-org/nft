@@ -1,6 +1,6 @@
 const hre = require('hardhat');
 
-const biswapNFTAddress = `0x4BBF75cc94E7176e62A100079b0e8E543819Cb4d`;
+const biswapNFTAddress = `0x427b580053114f91c5EA14E82258fe7F48574455`;
 const biswapNFTProxy = `0xD4220B0B196824C2F548a34C47D81737b0F6B5D6`;
 const swapFeeRewardNFTAddress = `0x04eFD76283A70334C72BB4015e90D034B9F3d245`;
 const launchpadAddress = '0xdd9f1b88CaFD688b11cbB403eEE38f5f167D55c2';
@@ -29,26 +29,26 @@ async function main() {
     })
     console.log(res);
 
-    console.log(`Verify contract smartChef`);
-    res = await hre.run("verify:verify", {
-        address: smartChefAddress,
-        constructorArguments: [biswapNFTProxy]
-    })
-    console.log(res);
-
-    console.log(`Verify contract launchpad`);
-    res = await hre.run("verify:verify", {
-        address: launchpadAddress,
-        constructorArguments: [biswapNFTProxy, oracleAddress, wbnbAddress, usdtTokenAddress]
-    })
-    console.log(res);
-
-    console.log(`Verify contract SwapFeeReward`);
-    res = await hre.run("verify:verify", {
-        address: swapFeeRewardNFTAddress,
-        constructorArguments: [factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNFTProxy, bswTokenAddress, usdtTokenAddress]
-    })
-    console.log(res);
+    // console.log(`Verify contract smartChef`);
+    // res = await hre.run("verify:verify", {
+    //     address: smartChefAddress,
+    //     constructorArguments: [biswapNFTProxy]
+    // })
+    // console.log(res);
+    //
+    // console.log(`Verify contract launchpad`);
+    // res = await hre.run("verify:verify", {
+    //     address: launchpadAddress,
+    //     constructorArguments: [biswapNFTProxy, oracleAddress, wbnbAddress, usdtTokenAddress]
+    // })
+    // console.log(res);
+    //
+    // console.log(`Verify contract SwapFeeReward`);
+    // res = await hre.run("verify:verify", {
+    //     address: swapFeeRewardNFTAddress,
+    //     constructorArguments: [factory, router, INIT_CODE_HASH, bswTokenAddress, oracleAddress, biswapNFTProxy, bswTokenAddress, usdtTokenAddress]
+    // })
+    // console.log(res);
 
 }
 
