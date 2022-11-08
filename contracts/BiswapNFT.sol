@@ -11,6 +11,7 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
     bytes32 public constant TOKEN_MINTER_ROLE = keccak256("TOKEN_MINTER");
     bytes32 public constant LAUNCHPAD_TOKEN_MINTER = keccak256("LAUNCHPAD_TOKEN_MINTER");
     bytes32 public constant RB_SETTER_ROLE = keccak256("RB_SETTER");
+    bytes32 public constant COLLECTIBLES_CHANGER = keccak256("COLLECTIBLES_CHANGER");
     uint public constant MAX_ARRAY_LENGTH_PER_REQUEST = 30;
 
     string private _internalBaseURI;
@@ -139,28 +140,55 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
         emit RBAccrued(user, _robiBoost[user][curDay]);
     }
 
-    function decreaseRB(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel, address user) external onlyRole(RB_SETTER_ROLE) returns(uint decreaseAmount) {
+    function decreaseRB(
+        uint[] calldata tokensId,
+        uint decreasePercent,
+        uint minDecreaseLevel,
+        address user
+    ) external onlyRole(RB_SETTER_ROLE) returns (uint decreaseAmount) {
         require(decreasePercent <= 1e12, "Wrong decrease percent");
         uint[] memory finalRB = new uint[](tokensId.length);
         decreaseAmount = 0;
-        for(uint i = 0; i < tokensId.length; i++){
-            if(_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
+        for (uint i = 0; i < tokensId.length; i++) {
+            if (_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
             require(ownerOf(tokensId[i]) == user, "Not owner");
             uint currentRB = _tokens[tokensId[i]].robiBoost;
-            finalRB[i] = currentRB * decreasePercent / 1e12;
+            finalRB[i] = (currentRB * decreasePercent) / 1e12;
             _tokens[tokensId[i]].robiBoost = finalRB[i];
             decreaseAmount += currentRB - finalRB[i];
         }
         emit RbDecrease(tokensId, finalRB);
     }
 
-    function decreaseRBView(uint[] calldata tokensId, uint decreasePercent, uint minDecreaseLevel) external view returns(uint decreaseAmount) {
+    function decreaseRBView(
+        uint[] calldata tokensId,
+        uint decreasePercent,
+        uint minDecreaseLevel
+    ) external view returns (uint decreaseAmount) {
         require(decreasePercent <= 1e12, "Wrong decrease percent");
         decreaseAmount = 0;
-        for(uint i = 0; i < tokensId.length; i++){
-            if(_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
-            decreaseAmount += _tokens[tokensId[i]].robiBoost - _tokens[tokensId[i]].robiBoost * decreasePercent / 1e12;
+        for (uint i = 0; i < tokensId.length; i++) {
+            if (_tokens[tokensId[i]].level <= minDecreaseLevel) continue;
+            decreaseAmount +=
+                _tokens[tokensId[i]].robiBoost -
+                (_tokens[tokensId[i]].robiBoost * decreasePercent) /
+                1e12;
         }
+    }
+
+    function burnForCollectibles(address user, uint[] calldata tokenId)
+        external
+        onlyRole(COLLECTIBLES_CHANGER)
+        returns (uint burnedRBAmount)
+    {
+        for (uint i = 0; i < tokenId.length; i++) {
+            require(_exists(tokenId[i]), "ERC721: token does not exist");
+            require(ownerOf(tokenId[i]) == user, "Not token owner");
+            Token memory curToken = _tokens[tokenId[i]];
+            burnedRBAmount += curToken.robiBoost;
+            _burn(tokenId[i]);
+        }
+        return burnedRBAmount;
     }
 
     //Public functions --------------------------------------------------------------------------------------------
@@ -402,6 +430,11 @@ contract BiswapNFT is Initializable, ERC721EnumerableUpgradeable, AccessControlU
                 revert("Not enough RB balance");
             }
         }
+    }
+
+    function _burn(uint tokenId) internal override {
+        super._burn(tokenId);
+        delete _tokens[tokenId];
     }
 
     //Private functions --------------------------------------------------------------------------------------------
